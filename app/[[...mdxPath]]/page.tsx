@@ -256,7 +256,7 @@ mkcert -key-file certs\\key.pem -cert-file certs\\cert.pem localhost 127.0.0.1 Y
                   </thead>
                   <tbody className="divide-y text-muted-foreground">
                     <tr>
-                      <td className="py-2 pr-6">MySagra app</td>
+                      <td className="py-2 pr-6">MyCassa</td>
                       <td className="py-2"><InlineCode>https://SERVER_IP</InlineCode> (port 443)</td>
                     </tr>
                     <tr>
