@@ -56,6 +56,7 @@ export async function DocsLayout({ children }: { children: React.ReactNode }) {
       navbar={navbar}
       pageMap={await getPageMap()}
       footer={footer}
+      nextThemes={{ defaultTheme: 'system' }}
       feedback={{ labels: 'feedback', link: 'https://github.com/MySagra/mysagra/issues' }}
       editLink={null}
       sidebar={{ defaultMenuCollapseLevel: 2 }}

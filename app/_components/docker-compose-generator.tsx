@@ -701,23 +701,23 @@ export default function DockerComposeGenerator() {
                                 {/* Code block with vertical clip */}
                                 <div className="relative">
                                     <div
-                                        className={`overflow-hidden rounded-lg border bg-neutral-950 ${isExpanded ? '' : 'max-h-72'
+                                        className={`overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 ${isExpanded ? '' : 'max-h-72'
                                             }`}
                                     >
-                                        <pre className="overflow-x-auto p-4 text-sm text-neutral-50">
+                                        <pre className="overflow-x-auto p-4 text-sm text-neutral-800 dark:text-neutral-50">
                                             <code>{currentOutput}</code>
                                         </pre>
                                     </div>
                                     {/* Gradient overlay sits flush inside the clipped box */}
                                     {!isExpanded && (
-                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 rounded-b-lg bg-linear-to-t from-neutral-950 to-transparent" />
+                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 rounded-b-lg bg-linear-to-t from-neutral-50 dark:from-neutral-950 to-transparent" />
                                     )}
                                 </div>
                                 {/* Toggle buttons outside the max-h container */}
                                 <div className="mt-2 flex justify-center">
                                     <button
                                         onClick={() => toggleExpanded(activeTab)}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900 px-4 py-1.5 text-xs font-medium text-neutral-300 hover:bg-neutral-800 transition-colors"
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 px-4 py-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
                                     >
                                         {isExpanded
                                             ? <><ChevronUp className="size-3.5" /> Collapse</>
