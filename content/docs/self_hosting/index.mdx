@@ -1,0 +1,177 @@
+# Docker
+
+This guide covers everything you need to run MySagra in a self-hosted environment using Docker Compose. Use the [Quick Start](/) page to generate your initial configuration files, then come back here for a deeper explanation of each concern.
+
+## Prerequisites
+
+- A Linux server (or local machine) with **Docker Engine ≥ 24** and **Docker Compose ≥ 2.22** installed
+- Open ports: `80`, `443`, and `81` (admin panel, optional)
+- A static LAN IP or a public domain name pointing at the server
+
+---
+
+## TLS / HTTPS certificates
+
+MySagra's frontends (MyCassa and MyAmministratore) use NextAuth for authentication, which requires a secure context. **HTTPS is mandatory** for the auth flows to work correctly.
+
+There are two common scenarios:
+
+### Scenario A — Internal / LAN deployment (self-signed with mkcert)
+
+Use this when your server is only reachable on a private network (e.g. a NAS at a public event).
+
+**mkcert** creates certificates signed by a local CA that your machines will trust. The Quick Start covers the installation; here is a reminder of the steps:
+
+```bash
+# 1. Install the local CA (once per machine that needs to trust the certs)
+mkcert -install
+
+# 2. From inside your mysagra/ folder — replace 192.168.1.10 with your server IP
+mkdir -p certs
+mkcert -key-file certs/key.pem -cert-file certs/cert.pem localhost 127.0.0.1 192.168.1.10
+
+# 3. Copy rootCA.pem so the containers trust the cert internally
+cp "$(mkcert -CAROOT)/rootCA.pem" ./rootCA.pem
+```
+
+> **Every device** (tablets, phones, laptops at the counter) that connects to MyCassa or MyAmministratore must have the mkcert root CA installed, otherwise the browser will show a certificate warning and NextAuth will fail.
+>
+> On Android / iOS you can install it by navigating to `http://YOUR_SERVER_IP/rootCA.pem` via plain HTTP (or AirDrop/USB transfer) and accepting the profile.
+
+**IP vs hostname**
+
+If your server IP can change (DHCP), assign it a static IP in your router or use a local DNS name (e.g. `mysagra.local` via mDNS / Avahi). Generate the cert for that hostname instead:
+
+```bash
+mkcert -key-file certs/key.pem -cert-file certs/cert.pem mysagra.local localhost 127.0.0.1
+```
+
+---
+
+### Scenario B — Public / remote deployment (real domain + Let's Encrypt)
+
+If every component is exposed on the public internet under a real domain, you do not need mkcert at all. Use **Certbot** or any ACME client to obtain a free certificate from Let's Encrypt:
+
+```bash
+# Example with certbot standalone (stop Nginx first if running)
+sudo certbot certonly --standalone -d mysagra.example.com
+
+# Certificates are written to:
+# /etc/letsencrypt/live/mysagra.example.com/fullchain.pem
+# /etc/letsencrypt/live/mysagra.example.com/privkey.pem
+```
+
+Then update the volume mounts in `docker-compose.yml` to point to the Certbot paths:
+
+```yaml
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt/live/mysagra.example.com:/etc/nginx/certs:ro
+```
+
+And in `nginx.conf` make sure `cert.pem` / `key.pem` match the Certbot filename convention:
+
+```nginx
+ssl_certificate     /etc/nginx/certs/fullchain.pem;
+ssl_certificate_key /etc/nginx/certs/privkey.pem;
+```
+
+With a real certificate you also **do not need `rootCA.pem`**, so you can remove the `rootCA.pem` volume mounts from MyCassa and MyAmministratore in `docker-compose.yml`, as well as the `NODE_EXTRA_CA_CERTS` environment variable.
+
+---
+
+## Nginx configuration
+
+The generated `nginx.conf` is a sensible starting point. Below are the most common customisations.
+
+### Exposing services on a custom domain
+
+If you want to bind a specific sub-domain to a service, add or replace a `server` block. For example, to expose the admin panel at `admin.example.com` instead of port `81`:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name admin.example.com;
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+    location / {
+        proxy_pass http://myamministratore-amministratore:3000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+}
+```
+
+Remember to update `AUTH_URL_AMMINISTRATORE` in your `.env` to match the new URL:
+
+```bash
+AUTH_URL_AMMINISTRATORE=https://admin.example.com
+```
+
+For full reference on Nginx `server` blocks, see the [official Nginx documentation](https://nginx.org/en/docs/http/ngx_http_core_module.html#server).
+
+### Restricting MyCassa to the local network only
+
+The generated config already includes an IP allowlist for the MyCassa `location /` block. Adjust the `allow` directives to match your subnet:
+
+```nginx
+location / {
+    allow 192.168.0.0/16;   # your LAN range
+    allow 10.0.0.0/8;
+    deny all;
+    proxy_pass http://mycassa-cassa:7000/;
+    ...
+}
+```
+
+### Removing TLS for a fully proxied public setup
+
+If you sit behind a cloud load-balancer that handles TLS termination (e.g. Cloudflare, AWS ALB), you can strip the `ssl` directive from the Nginx config and listen on plain HTTP inside the container:
+
+```nginx
+server {
+    listen 80;
+    server_name mysagra.example.com;
+    # no ssl_certificate lines needed
+    location ~ ^/(api-docs|v1|auth) {
+        proxy_pass http://mysagra-api:4300;
+        ...
+    }
+}
+```
+
+In this case set `TRUST_PROXY_LEVEL=1` in your `.env`.
+
+---
+
+## Starting and managing the stack
+
+```bash
+# Start all services in the background
+docker compose up -d
+
+# Watch API logs
+docker compose logs -f mysagra-backend
+
+# Restart a single service after a config change
+docker compose restart nginx
+
+# Stop and remove containers (data volumes are preserved)
+docker compose down
+
+# Stop and wipe all data volumes
+docker compose down -v
+```
+
+## Updating to a newer release
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+MySagra API runs pending database migrations automatically on startup — no manual migration step is needed.

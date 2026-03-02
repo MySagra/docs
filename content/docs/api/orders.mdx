@@ -1,0 +1,419 @@
+# Orders
+
+Manage the full order lifecycle — from creation to confirmation, completion, and pickup. Orders contain items grouped by category, support discounts/surcharges, and broadcast real-time events.
+
+## Order Lifecycle
+
+```
+PENDING → CONFIRMED → COMPLETED → PICKED_UP
+```
+
+> You can transition from any state to any other state directly.
+
+## Order Object (List)
+
+Returned by `GET /v1/orders` (lightweight, without item details):
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j1",
+  "displayCode": "A01",
+  "table": "5",
+  "customer": "Mario Rossi",
+  "subTotal": "25.50",
+  "status": "pending",
+  "createdAt": "2025-11-04T10:30:00Z",
+  "updatedAt": "2025-11-04T10:30:00Z"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier (CUID) |
+| `displayCode` | `string` | 3-character alphanumeric order code |
+| `table` | `string` | Table number or identifier |
+| `customer` | `string` | Customer name |
+| `subTotal` | `string` | Subtotal before discount |
+| `status` | `string` | `pending`, `confirmed`, `completed`, or `picked_up` |
+| `createdAt` | `string` | ISO 8601 creation timestamp |
+| `updatedAt` | `string` | ISO 8601 last update timestamp |
+
+## Order Object (Detail)
+
+Returned by `GET /v1/orders/{id}` (items grouped by category with ingredients):
+
+```json
+{
+  "id": 42,
+  "displayCode": "A01",
+  "table": "5",
+  "customer": "Mario Rossi",
+  "subTotal": "25.50",
+  "createdAt": "2025-11-12T10:30:00.000Z",
+  "categorizedItems": [
+    {
+      "category": { "id": 1, "name": "Pizza" },
+      "items": [
+        {
+          "id": "clm1234567890",
+          "quantity": 2,
+          "notes": "No onions, extra cheese",
+          "unitPrice": 8.50,
+          "unitSurcharge": 0.75,
+          "total": 18.50,
+          "food": {
+            "id": "clx1a2b3c4d5e6f7g8h9i0j1",
+            "name": "Pizza Margherita",
+            "description": "Classic pizza with tomato and mozzarella",
+            "price": "8.50",
+            "available": true,
+            "ingredients": [
+              { "id": "clm111", "name": "Mozzarella" },
+              { "id": "clm222", "name": "Tomato Sauce" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Order Item Input
+
+Used when creating or confirming orders:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `foodId` | `string` | Yes | Food item ID (CUID) |
+| `quantity` | `integer` | Yes | Quantity (min: 1) |
+| `notes` | `string` | No | Notes for this item |
+| `surcharge` | `number` | No | Extra surcharge (default: `0`) |
+
+---
+
+## GET `/v1/orders`
+
+Retrieve orders with advanced filtering and pagination.
+
+**Authentication:** Bearer token (admin or operator)
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `search` | `string` | — | Search by customer, table, or order code |
+| `displayCode` | `string` | — | Filter by display code |
+| `page` | `integer` | `1` | Page number (1-based) |
+| `limit` | `integer` | `20` | Items per page (max 100) |
+| `sortBy` | `string` | `createdAt` | Sort field |
+| `status` | `string[]` | — | Filter by status (repeatable) |
+| `dateFrom` | `datetime` | — | Start date filter (inclusive) |
+| `dateTo` | `datetime` | — | End date filter (inclusive) |
+
+### Example
+
+```
+GET /v1/orders?status=CONFIRMED&status=COMPLETED&page=1&limit=10&dateFrom=2025-11-01T00:00:00Z
+```
+
+### Response `200 OK`
+
+```json
+{
+  "orders": [ ... ],
+  "pagination": {
+    "currentPage": 1,
+    "totalOrdersPages": 5,
+    "totalOrdersItems": 100,
+    "itemsPerPage": 20,
+    "hasNextPage": true,
+    "hasPrevPage": false,
+    "nextPage": 2,
+    "prevPage": null
+  }
+}
+```
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid query parameters |
+| `401` | Unauthorized — authentication required |
+| `403` | Forbidden — insufficient permissions |
+
+---
+
+## GET `/v1/orders/{id}`
+
+Retrieve complete order details with items grouped by category.
+
+**Authentication:** Bearer token (admin or operator)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Numeric order ID |
+
+### Response `200 OK`
+
+Returns an [Order Detail Object](#order-object-detail).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid order ID format |
+| `401` | Unauthorized — authentication required |
+| `403` | Forbidden — insufficient permissions |
+| `404` | Order not found |
+
+---
+
+## POST `/v1/orders`
+
+Create a new order, optionally confirming it immediately.
+
+**Authentication:** Bearer token (admin or operator)
+
+### Request Body
+
+```json
+{
+  "table": "5",
+  "customer": "Mario Rossi",
+  "orderItems": [
+    {
+      "foodId": "clx1a2b3c4d5e6f7g8h9i0j1",
+      "quantity": 2,
+      "notes": "No onions, extra cheese",
+      "surcharge": 1.50
+    }
+  ],
+  "confirm": {
+    "paymentMethod": "CASH",
+    "discount": 2.50,
+    "userId": "clx1a2b3c4d5e6f7g8h9i0j1",
+    "cashRegisterId": "clx9z8y7x6w5v4u3t2s1r0q9"
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `table` | `string` | Yes | Table number (min 1 char) |
+| `customer` | `string` | Yes | Customer name (min 1 char) |
+| `orderItems` | `array` | Yes | At least one [Order Item Input](#order-item-input) |
+| `confirm` | `object` | No | If provided, order is created as `CONFIRMED` |
+
+### Confirm Object
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `paymentMethod` | `string` | Yes | `CASH` or `CARD` |
+| `discount` | `number` | No | Discount amount (default: `0`) |
+| `userId` | `string` | No | User who confirmed |
+| `cashRegisterId` | `string` | No | Cash register used |
+| `orderItems` | `array` | No | Replace existing items |
+
+### Price Calculation
+
+- Item total = `surcharge + (unitPrice × quantity)`
+- Subtotal = sum of all item totals
+- Total = `subtotal - discount`
+
+### Response `201 Created`
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j1",
+  "displayCode": "A01",
+  "table": "5",
+  "customer": "Mario Rossi",
+  "subTotal": "25.50",
+  "status": "CONFIRMED",
+  "ticketNumber": 42,
+  "createdAt": "2025-11-12T10:30:00Z",
+  "updatedAt": "2025-11-12T10:30:00Z",
+  "orderItems": true
+}
+```
+
+> The `orderItems` field is `true` to indicate items were created. Use `GET /v1/orders/{id}` for full details.
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid request or food items not found |
+| `401` | Unauthorized — authentication required |
+| `403` | Forbidden — insufficient permissions |
+
+---
+
+## POST `/v1/orders/{id}/confirm`
+
+Confirm a **PENDING** order.
+
+**Authentication:** Bearer token (admin or operator)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Order ID (must be PENDING) |
+
+### Request Body
+
+```json
+{
+  "paymentMethod": "CASH",
+  "discount": 5,
+  "userId": "clx1a2b3c4d5e6f7g8h9i0j1",
+  "cashRegisterId": "clx9z8y7x6w5v4u3t2s1r0q9",
+  "orderItems": [
+    {
+      "foodId": "clm1234567890",
+      "quantity": 2,
+      "notes": "Extra spicy",
+      "surcharge": 1.50
+    }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `paymentMethod` | `string` | Yes | `CASH` or `CARD` |
+| `discount` | `number` | No | Discount amount (default: `0`) |
+| `userId` | `string` | No | User who confirmed |
+| `cashRegisterId` | `string` | No | Cash register used |
+| `orderItems` | `array` | No | If provided, replaces all existing items |
+
+> **Ticket numbers** are daily progressive and reset at 12:00 PM.
+
+### Response `200 OK`
+
+Returns the confirmed order with ticket number and payment details.
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid items, or order is already confirmed |
+| `401` | Unauthorized — authentication required |
+| `403` | Forbidden — insufficient permissions |
+| `404` | Order not found |
+| `500` | Internal server error |
+
+---
+
+## POST `/v1/orders/{id}/reprint`
+
+Trigger a reprint of selected order items by broadcasting a `reprint-order` event to the printer SSE channel. Does **not** modify the order.
+
+**Authentication:** Bearer token (admin or operator)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Numeric order ID |
+
+### Request Body
+
+```json
+{
+  "orderItems": [
+    { "id": "clx0abc0001mx01example" }
+  ],
+  "reprintReceipt": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `orderItems` | `array` | Yes | List of `{ id: string }` — order item CUIDs to reprint (min 1) |
+| `reprintReceipt` | `boolean` | Yes | Whether to also reprint the fiscal receipt |
+
+### Response `200 OK`
+
+Returns the order with:
+- `reprintOrderItems` — filtered items selected for reprint
+- `reprintReceipt` — whether the receipt should be reprinted
+- `orderItems` — complete unfiltered list of all order items
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid request body or item IDs not found in this order |
+| `401` | Unauthorized — authentication required |
+| `403` | Forbidden — insufficient permissions |
+| `404` | Order not found |
+
+---
+
+## PATCH `/v1/orders/{id}`
+
+Update order status.
+
+**Authentication:** Bearer token (admin or operator)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Numeric order ID |
+
+### Request Body
+
+```json
+{
+  "status": "COMPLETED"
+}
+```
+
+| Field | Type | Required | Values |
+|-------|------|----------|--------|
+| `status` | `string` | Yes | `PENDING`, `CONFIRMED`, `COMPLETED`, `PICKED_UP` |
+
+### Response `200 OK`
+
+Returns the updated order.
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid status value |
+| `401` | Unauthorized — authentication required |
+| `403` | Forbidden — insufficient permissions |
+| `404` | Order not found |
+
+---
+
+## DELETE `/v1/orders/{id}`
+
+Permanently delete an order and all its items.
+
+**Authentication:** Bearer token (admin or operator)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Numeric order ID |
+
+### Response `204 No Content`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid order ID |
+| `401` | Unauthorized — authentication required |
+| `403` | Forbidden — insufficient permissions |
+| `404` | Order not found |

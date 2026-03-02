@@ -1,0 +1,151 @@
+# Ingredients
+
+Manage ingredients that can be associated with food items.
+
+## Ingredient Object
+
+```json
+{
+  "id": "clm1234567890",
+  "name": "Mozzarella"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier (CUID) |
+| `name` | `string` | Ingredient name |
+
+---
+
+## GET `/v1/ingredients`
+
+Retrieve all ingredients.
+
+**Authentication:** Bearer token
+
+### Response `200 OK`
+
+```json
+[
+  { "id": "clm1234567890", "name": "Mozzarella" },
+  { "id": "clm0987654321", "name": "Tomato Sauce" }
+]
+```
+
+---
+
+## GET `/v1/ingredients/{id}`
+
+Retrieve a single ingredient by ID.
+
+**Authentication:** Bearer token
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Ingredient ID (CUID) |
+
+### Response `200 OK`
+
+Returns an [Ingredient Object](#ingredient-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid ID parameter |
+| `404` | Ingredient not found |
+
+---
+
+## POST `/v1/ingredients`
+
+Create a new ingredient.
+
+**Authentication:** Bearer token (admin)
+
+### Request Body
+
+```json
+{
+  "name": "Mozzarella"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes | Ingredient name |
+
+### Response `201 Created`
+
+Returns the created [Ingredient Object](#ingredient-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid request body |
+| `409` | Ingredient name already exists |
+
+---
+
+## PUT `/v1/ingredients/{id}`
+
+Update an ingredient.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Ingredient ID (CUID) |
+
+### Request Body
+
+```json
+{
+  "name": "Mozzarella di Bufala"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes | Updated ingredient name |
+
+### Response `200 OK`
+
+Returns the updated [Ingredient Object](#ingredient-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid request body or ID |
+| `404` | Ingredient not found |
+| `409` | Ingredient name already exists |
+
+---
+
+## DELETE `/v1/ingredients/{id}`
+
+Delete an ingredient.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Ingredient ID (CUID) |
+
+### Response `204 No Content`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid ID parameter |
+| `404` | Ingredient not found |

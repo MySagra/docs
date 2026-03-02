@@ -1,0 +1,79 @@
+import { Callout } from 'nextra/components'
+
+# API Reference
+
+The MySagra REST API allows you to manage all aspects of your sagra (food festival) event — from menus and orders to printers and cash registers.
+
+## Base URL
+
+```
+https://your-domain.com
+```
+
+### URL Structure
+
+| Path | Description |
+|------|-------------|
+| `/auth/*` | Authentication endpoints (unversioned) |
+| `/events/*` | Server-Sent Events channels (unversioned) |
+| `/v1/*` | Versioned API resources |
+
+## Authentication
+
+Most endpoints require a **Bearer token** (JWT) sent in the `Authorization` header:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+Obtain tokens via the [Authentication](/api/authentication) endpoints. Access tokens expire after **15 minutes**; use the refresh endpoint to obtain new ones.
+
+<Callout type="warning">
+  The default credentials are `admin` / `admin`. For security reasons, change your password immediately after the first login using the [Users](/docs/api/users) endpoints.
+</Callout>
+
+## Common Response Codes
+
+| Status | Description |
+|--------|------------|
+| `200`  | Success |
+| `201`  | Resource created |
+| `204`  | Resource deleted (no content) |
+| `400`  | Bad request / validation error |
+| `401`  | Unauthorized — missing or invalid token |
+| `403`  | Forbidden — insufficient permissions |
+| `404`  | Resource not found |
+| `409`  | Conflict — duplicate resource |
+| `500`  | Internal server error |
+
+## Error Format
+
+All errors return a JSON object:
+
+```json
+{
+  "message": "Error description"
+}
+```
+
+or
+
+```json
+{
+  "error": "Error description"
+}
+```
+
+## Resources
+
+| Resource | Description |
+|----------|------------|
+| [Authentication](/api/authentication) | Login, logout and token refresh |
+| [Users](/api/users) | User management (admin only) |
+| [Categories](/api/categories) | Menu category management |
+| [Foods](/api/foods) | Food item management |
+| [Ingredients](/api/ingredients) | Ingredient management |
+| [Orders](/api/orders) | Order lifecycle management |
+| [Printers](/api/printers) | Thermal printer management |
+| [Cash Registers](/api/cash-registers) | Cash register management |
+| [Events (SSE)](/api/events) | Real-time Server-Sent Events |

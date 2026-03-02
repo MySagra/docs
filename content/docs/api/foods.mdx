@@ -1,0 +1,238 @@
+# Foods
+
+Manage food items within categories. Foods can have ingredients, a custom printer, and can be toggled available/unavailable.
+
+## Food Object
+
+```json
+{
+  "id": "clm9876543210",
+  "name": "Pizza Margherita",
+  "description": "Classic pizza with tomato and mozzarella",
+  "price": 9.99,
+  "categoryId": "clxyz123456789abcdef",
+  "printerId": "clxyz987654321fedcba",
+  "available": true,
+  "category": {
+    "id": "clxyz123456789abcdef",
+    "name": "Pizzeria",
+    "available": true,
+    "position": 1
+  },
+  "ingredients": [
+    { "id": "clm111", "name": "Mozzarella" },
+    { "id": "clm222", "name": "Tomato Sauce" }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier (CUID) |
+| `name` | `string` | Food name |
+| `description` | `string` | Food description |
+| `price` | `number` | Price in currency units |
+| `categoryId` | `string` | Parent category ID |
+| `printerId` | `string \| null` | Optional printer override |
+| `available` | `boolean` | Whether the item is available |
+| `category` | `object` | Parent category details |
+| `ingredients` | `array` | List of ingredients (only with `include=ingredients`) |
+
+---
+
+## GET `/v1/foods`
+
+Retrieve all food items with optional filtering.
+
+**Authentication:** Bearer token
+- Non-admin users: only `available=true` foods
+- Admin users: all foods
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `include` | `string` | Set to `ingredients` to include ingredient details |
+| `available` | `boolean` | Filter by availability |
+| `category` | `string[]` | Filter by category name(s) — can be repeated |
+
+### Example
+
+```
+GET /v1/foods?include=ingredients&available=true&category=Pizzeria&category=Grill
+```
+
+### Response `200 OK`
+
+Returns an array of [Food Objects](#food-object).
+
+---
+
+## GET `/v1/foods/{id}`
+
+Retrieve a single food item by ID.
+
+**Authentication:** Bearer token
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Food ID (CUID) |
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `include` | `string` | Set to `ingredients` to include ingredient details |
+
+### Response `200 OK`
+
+Returns a [Food Object](#food-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid ID parameter |
+| `404` | Food item not found |
+
+---
+
+## POST `/v1/foods`
+
+Create a new food item.
+
+**Authentication:** Bearer token (admin)
+
+### Request Body
+
+```json
+{
+  "name": "Pizza Margherita",
+  "description": "Classic pizza with tomato and mozzarella",
+  "price": 9.99,
+  "categoryId": "clxyz123456789abcdef",
+  "printerId": "clxyz987654321fedcba",
+  "available": true,
+  "ingredients": [
+    { "id": "clm1234567890" },
+    { "id": "clm0987654321" }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes | Food name |
+| `description` | `string` | No | Food description |
+| `price` | `number` | Yes | Price |
+| `categoryId` | `string` | Yes | Parent category ID |
+| `printerId` | `string \| null` | No | Printer override |
+| `available` | `boolean` | Yes | Availability status |
+| `ingredients` | `array` | No | Array of `{ id: string }` ingredient references |
+
+### Response `201 Created`
+
+Returns the created [Food Object](#food-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid request body |
+| `409` | Food name already exists |
+
+---
+
+## PUT `/v1/foods/{id}`
+
+Update a food item (full replacement).
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Food ID (CUID) |
+
+### Request Body
+
+Same as [POST](#post-v1foods).
+
+### Response `200 OK`
+
+Returns the updated [Food Object](#food-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid request body or ID |
+| `404` | Food item not found |
+| `409` | Food name already exists |
+
+---
+
+## PATCH `/v1/foods/{id}`
+
+Update the availability status (or printer) of a food item.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Food ID (CUID) |
+
+### Request Body
+
+```json
+{
+  "available": false,
+  "printerId": "clxyz987654321fedcba"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `available` | `boolean` | No | New availability status |
+| `printerId` | `string \| null` | No | Printer override, or `null` to remove |
+
+### Response `200 OK`
+
+Returns the updated [Food Object](#food-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid ID or request body |
+| `401` | Unauthorized — authentication required |
+| `403` | Forbidden — admin access required |
+| `404` | Food item not found |
+
+---
+
+## DELETE `/v1/foods/{id}`
+
+Delete a food item.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Food ID (CUID) |
+
+### Response `204 No Content`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid ID parameter |
+| `404` | Food item not found |

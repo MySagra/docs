@@ -1,0 +1,110 @@
+# Authentication
+
+The Auth endpoints handle user login, logout, and token refresh. MySagra uses **JWT-based authentication** with short-lived access tokens and long-lived refresh tokens stored as HTTP-only cookies.
+
+## Token Lifecycle
+
+| Token | Storage | Expiry |
+|-------|---------|--------|
+| **Access Token** | Response body / `Authorization` header | 15 minutes |
+| **Refresh Token** | HTTP-only cookie (`refreshToken`) | 7 days |
+
+---
+
+## POST `/auth/login`
+
+Authenticate a user with username and password.
+
+**Authentication:** None required
+
+### Request Body
+
+```json
+{
+  "username": "admin",
+  "password": "password123"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `username` | `string` | Yes | User's username |
+| `password` | `string` | Yes | User's password |
+
+### Response `200 OK`
+
+The refresh token is automatically set as an HTTP-only cookie named `refreshToken` (expires in 7 days).
+
+```json
+{
+  "user": {
+    "id": "clxyz123456789abcdef",
+    "username": "admin",
+    "role": "admin"
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `user.id` | `string` | User's unique identifier (CUID) |
+| `user.username` | `string` | User's username |
+| `user.role` | `string` | User's role name |
+| `accessToken` | `string` | JWT access token (expires in 15 minutes) |
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Missing username or password |
+| `401` | Invalid password |
+| `404` | User not found |
+
+---
+
+## POST `/auth/logout`
+
+Revoke a refresh token to log out from a specific session.
+
+**Authentication:** Cookie (`refreshToken`)
+
+The refresh token is automatically read from the `refreshToken` HTTP-only cookie.
+
+### Response `200 OK`
+
+Empty response — the refresh token has been revoked.
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Missing or invalid refresh token |
+| `401` | Invalid or expired refresh token |
+
+---
+
+## POST `/auth/refresh`
+
+Generate a new access token using the refresh token cookie.
+
+**Authentication:** Cookie (`refreshToken`)
+
+### Response `200 OK`
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `accessToken` | `string` | New JWT access token (expires in 15 minutes) |
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Refresh token missing |
+| `401` | Invalid or expired refresh token |

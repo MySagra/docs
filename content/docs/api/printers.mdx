@@ -1,0 +1,197 @@
+# Printers
+
+Manage thermal printers used for order ticket printing. Printers can be assigned to categories, food items, and cash registers.
+
+## Printer Object
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j1",
+  "name": "Kitchen Printer",
+  "ip": "192.168.1.200",
+  "port": 9100,
+  "description": "Printer located in the kitchen",
+  "status": "ONLINE"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier (CUID) |
+| `name` | `string` | Printer name |
+| `ip` | `string` | IP address |
+| `port` | `integer` | Port number (default: `9100`) |
+| `description` | `string` | Printer description |
+| `status` | `string` | `ONLINE`, `OFFLINE`, or `ERROR` |
+
+---
+
+## GET `/v1/printers`
+
+Retrieve all printers.
+
+**Authentication:** Bearer token
+
+### Response `200 OK`
+
+```json
+[
+  {
+    "id": "clx1a2b3c4d5e6f7g8h9i0j1",
+    "name": "Kitchen Printer",
+    "ip": "192.168.1.200",
+    "port": 9100,
+    "description": "Printer located in the kitchen",
+    "status": "ONLINE"
+  }
+]
+```
+
+---
+
+## GET `/v1/printers/{id}`
+
+Retrieve a single printer by ID.
+
+**Authentication:** Bearer token
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Printer ID (CUID) |
+
+### Response `200 OK`
+
+Returns a [Printer Object](#printer-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Printer not found |
+
+---
+
+## POST `/v1/printers`
+
+Create a new printer.
+
+**Authentication:** Bearer token (admin)
+
+### Request Body
+
+```json
+{
+  "name": "Kitchen Printer",
+  "ip": "192.168.1.200",
+  "port": 9100,
+  "description": "Printer located in the kitchen",
+  "status": "ONLINE"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes | Printer name |
+| `ip` | `string` | Yes | IP address |
+| `port` | `integer` | No | Port (default: `9100`) |
+| `description` | `string` | No | Description |
+| `status` | `string` | No | `ONLINE`, `OFFLINE`, or `ERROR` (default: `ONLINE`) |
+
+### Response `201 Created`
+
+Returns the created [Printer Object](#printer-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid input |
+
+---
+
+## PUT `/v1/printers/{id}`
+
+Update an existing printer.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Printer ID (CUID) |
+
+### Request Body
+
+Same as [POST](#post-v1printers).
+
+### Response `200 OK`
+
+Returns the updated [Printer Object](#printer-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Printer not found |
+
+---
+
+## PATCH `/v1/printers/{id}`
+
+Update the status of a printer.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Printer ID (CUID) |
+
+### Request Body
+
+```json
+{
+  "status": "OFFLINE"
+}
+```
+
+| Field | Type | Required | Values |
+|-------|------|----------|--------|
+| `status` | `string` | Yes | `ONLINE`, `OFFLINE`, `ERROR` |
+
+### Response `200 OK`
+
+Returns the updated [Printer Object](#printer-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid input |
+| `404` | Printer not found |
+
+---
+
+## DELETE `/v1/printers/{id}`
+
+Delete a printer.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Printer ID (CUID) |
+
+### Response `200 OK`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Printer not found |

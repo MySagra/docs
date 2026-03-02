@@ -1,0 +1,238 @@
+# Events (SSE)
+
+Subscribe to **Server-Sent Events** for real-time order updates. This enables live dashboards, kitchen displays, and cashier systems to receive instant notifications.
+
+## How SSE Works
+
+1. Client opens a long-lived HTTP connection
+2. Server pushes updates as they occur
+3. Connection stays open with periodic keep-alive messages (every 15 seconds)
+4. Client automatically reconnects if the connection is lost
+
+---
+
+## GET `/events/{channel}`
+
+Establish a persistent SSE connection for a specific channel.
+
+**Authentication:** Bearer token (admin or operator)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `channel` | `string` | Event channel: `cashier`, `display`, or `printer` |
+
+### Response Headers
+
+```
+Content-Type: text/event-stream
+Cache-Control: no-cache
+Connection: keep-alive
+```
+
+### Message Format
+
+**Keep-alive (every 15 seconds):**
+```
+: keep-alive
+
+```
+
+**Data event:**
+```
+data: {"displayCode":"A01","ticketNumber":1,"id":1}
+
+```
+
+### Available Channels
+
+#### `cashier`
+
+Broadcasts real-time updates for the cashier interface when orders are created or confirmed.
+
+**Event:** `new-order` — Fired when a new order is placed.
+
+```json
+{
+  "id": 1,
+  "displayCode": "A01",
+  "table": "3",
+  "customer": "John Doe",
+  "createdAt": "2026-01-15T18:30:00.000Z",
+  "confirmedAt": null,
+  "ticketNumber": null,
+  "status": "PENDING",
+  "paymentMethod": null,
+  "subTotal": "25",
+  "discount": "0",
+  "surcharge": "0",
+  "total": "25",
+  "userId": null,
+  "cashRegisterId": null,
+  "orderItems": [
+    {
+      "id": "clx0abc0001mx01example",
+      "quantity": 2,
+      "orderId": 1,
+      "foodId": "clx0def0002mx01example",
+      "unitPrice": "12.5",
+      "unitSurcharge": "0",
+      "total": "25",
+      "notes": "No onions"
+    }
+  ]
+}
+```
+
+**Event:** `confirmed-order` — Fired when an order is confirmed by a cashier.
+
+```json
+{
+  "displayCode": "A01",
+  "ticketNumber": 1,
+  "id": 1
+}
+```
+
+---
+
+#### `display`
+
+Broadcasts real-time updates for display systems (kitchen screens, customer-facing displays) when order confirmations occur.
+
+**Event:** `confirmed-order` — Fired when an order is confirmed.
+
+```json
+{
+  "displayCode": "A01",
+  "ticketNumber": 1,
+  "id": 1
+}
+```
+
+---
+
+#### `printer`
+
+Broadcasts real-time updates for printers when a cashier confirms a new order.
+
+**Event:** `confirmed-order` — Fired when an order is confirmed, includes full order details for printing.
+
+```json
+{
+  "id": 1,
+  "displayCode": "A01",
+  "table": "3",
+  "customer": "John Doe",
+  "createdAt": "2026-01-15T18:30:00.000Z",
+  "confirmedAt": "2026-01-15T18:35:12.000Z",
+  "ticketNumber": 1,
+  "status": "CONFIRMED",
+  "paymentMethod": "CASH",
+  "subTotal": "25",
+  "discount": "2",
+  "surcharge": "1",
+  "total": "24",
+  "userId": "clx0usr0003mx01example",
+  "cashRegisterId": "clx0csh0004mx01example",
+  "orderItems": [
+    {
+      "id": "clx0abc0001mx01example",
+      "quantity": 2,
+      "orderId": 1,
+      "notes": "Extra spicy",
+      "unitPrice": "12.5",
+      "unitSurcharge": "0.5",
+      "total": "26",
+      "food": {
+        "id": "clx0def0002mx01example",
+        "name": "Margherita",
+        "printerId": null
+      }
+    }
+  ]
+}
+```
+
+**Event:** `reprint-order` — Fired when a cashier requests a reprint of specific order items or the receipt. Contains `reprintOrderItems` (only the selected items) and `reprintReceipt` (whether to reprint the receipt), alongside the full `orderItems` list.
+
+```json
+{
+  "id": 1,
+  "displayCode": "A01",
+  "table": "3",
+  "customer": "John Doe",
+  "createdAt": "2026-01-15T18:30:00.000Z",
+  "confirmedAt": "2026-01-15T18:35:12.000Z",
+  "ticketNumber": 1,
+  "status": "CONFIRMED",
+  "paymentMethod": "CASH",
+  "subTotal": "25",
+  "discount": "2",
+  "surcharge": "1",
+  "total": "24",
+  "userId": "clx0usr0003mx01example",
+  "cashRegisterId": "clx0csh0004mx01example",
+  "reprintReceipt": true,
+  "reprintOrderItems": [
+    {
+      "id": "clx0abc0001mx01example",
+      "orderId": 1,
+      "foodId": "clx0def0002mx01example",
+      "quantity": 2,
+      "notes": "Extra spicy",
+      "unitPrice": "12.5",
+      "unitSurcharge": "0.5",
+      "total": "26",
+      "food": {
+        "id": "clx0def0002mx01example",
+        "name": "Margherita",
+        "printerId": null
+      }
+    }
+  ],
+  "orderItems": [
+    {
+      "id": "clx0abc0001mx01example",
+      "orderId": 1,
+      "foodId": "clx0def0002mx01example",
+      "quantity": 2,
+      "notes": "Extra spicy",
+      "unitPrice": "12.5",
+      "unitSurcharge": "0.5",
+      "total": "26",
+      "food": {
+        "id": "clx0def0002mx01example",
+        "name": "Margherita",
+        "printerId": null
+      }
+    }
+  ]
+}
+```
+
+### Client Example
+
+```javascript
+const eventSource = new EventSource('/events/cashier', {
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN' }
+});
+
+eventSource.onmessage = (event) => {
+  const orderData = JSON.parse(event.data);
+  console.log('Order update:', orderData);
+};
+
+eventSource.onerror = (error) => {
+  console.error('SSE connection error:', error);
+};
+```
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid channel parameter |
+| `401` | Unauthorized — authentication required |
+| `403` | Forbidden — insufficient permissions |

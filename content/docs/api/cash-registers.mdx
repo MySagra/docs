@@ -1,0 +1,199 @@
+# Cash Registers
+
+Manage cash registers used at the point of sale. Each cash register has a default printer and can be enabled or disabled.
+
+## Cash Register Object
+
+```json
+{
+  "id": "clx1a2b3c4d5e6f7g8h9i0j1",
+  "name": "Bar Cash Register",
+  "enabled": true,
+  "defaultPrinterId": "clx1a2b3c4d5e6f7g8h9i0j1"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier (CUID) |
+| `name` | `string` | Cash register name |
+| `enabled` | `boolean` | Whether the cash register is active |
+| `defaultPrinterId` | `string` | Default printer ID |
+
+---
+
+## GET `/v1/cash-registers`
+
+Retrieve all cash registers.
+
+**Authentication:** Bearer token
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `include` | `string` | Set to `printer` to include printer details |
+| `enabled` | `boolean` | Filter by enabled status |
+
+### Response `200 OK`
+
+```json
+[
+  {
+    "id": "clx1a2b3c4d5e6f7g8h9i0j1",
+    "name": "Bar Cash Register",
+    "enabled": true,
+    "defaultPrinterId": "clx1a2b3c4d5e6f7g8h9i0j1"
+  }
+]
+```
+
+---
+
+## GET `/v1/cash-registers/{id}`
+
+Retrieve a single cash register by ID.
+
+**Authentication:** Bearer token
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Cash register ID (CUID) |
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `include` | `string` | Set to `printer` to include printer details |
+
+### Response `200 OK`
+
+Returns a [Cash Register Object](#cash-register-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Cash register not found |
+
+---
+
+## POST `/v1/cash-registers`
+
+Create a new cash register.
+
+**Authentication:** Bearer token (admin)
+
+### Request Body
+
+```json
+{
+  "name": "Bar Cash Register",
+  "enabled": true,
+  "defaultPrinterId": "clx1a2b3c4d5e6f7g8h9i0j1"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes | Cash register name |
+| `enabled` | `boolean` | No | Active status (default: `true`) |
+| `defaultPrinterId` | `string` | Yes | Default printer ID |
+
+### Response `201 Created`
+
+Returns the created [Cash Register Object](#cash-register-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid input |
+
+---
+
+## PUT `/v1/cash-registers/{id}`
+
+Update an existing cash register.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Cash register ID (CUID) |
+
+### Request Body
+
+Same as [POST](#post-v1cash-registers).
+
+### Response `200 OK`
+
+Returns the updated [Cash Register Object](#cash-register-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Cash register not found |
+
+---
+
+## PATCH `/v1/cash-registers/{id}`
+
+Update the enabled status of a cash register.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Cash register ID (CUID) |
+
+### Request Body
+
+```json
+{
+  "enabled": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | `boolean` | Yes | New enabled status |
+
+### Response `200 OK`
+
+Returns the updated [Cash Register Object](#cash-register-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Cash register not found |
+
+---
+
+## DELETE `/v1/cash-registers/{id}`
+
+Delete a cash register.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Cash register ID (CUID) |
+
+### Response `200 OK`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Cash register not found |

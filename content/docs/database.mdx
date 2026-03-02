@@ -1,0 +1,160 @@
+# Database
+
+MySagra uses **MySQL** as its primary database, managed via [Prisma ORM](https://www.prisma.io/). Migrations are applied automatically on API startup when `MIGRATE_ON_START=true` is set in the environment (default for the Docker Compose setup).
+
+## ER Diagram
+
+```mermaid
+erDiagram
+    Category {
+        String id PK
+        String name
+        Boolean available
+        Int position
+        String image
+        String printerId FK
+    }
+    Ingredient {
+        String id PK
+        String name
+    }
+    Food {
+        String id PK
+        String name
+        String description
+        Decimal price
+        Boolean available
+        String categoryId FK
+        String printerId FK
+    }
+    FoodIngredient {
+        String foodId FK
+        String ingredientId FK
+    }
+    Order {
+        Int id PK
+        String displayCode
+        String table
+        String customer
+        DateTime createdAt
+        DateTime confirmedAt
+        Int ticketNumber
+        OrderStatus status
+        PaymentMethod paymentMethod
+        Decimal subTotal
+        Decimal discount
+        Decimal surcharge
+        Decimal total
+        String userId FK
+        String cashRegisterId FK
+    }
+    OrderItem {
+        String id PK
+        Int quantity
+        Int orderId FK
+        String foodId FK
+        Decimal unitPrice
+        Decimal unitSurcharge
+        Decimal total
+        String notes
+    }
+    DailyTicketCounter {
+        String id PK
+        DateTime date
+        Int counter
+    }
+    Role {
+        String id PK
+        String name
+    }
+    User {
+        String id PK
+        String username
+        String password
+        String roleId FK
+    }
+    RefreshToken {
+        String id PK
+        String token
+        String userId FK
+        DateTime createdAt
+        DateTime expiresAt
+        DateTime revokedAt
+        String ip
+        String userAgent
+    }
+    Printer {
+        String id PK
+        String name
+        String ip
+        Int port
+        String description
+        PrinterStatus status
+    }
+    CashRegister {
+        String id PK
+        String name
+        Boolean enabled
+        String defaultPrinterId FK
+    }
+
+    Category }o--o| Printer : "printerId"
+    Food }o--|| Category : "categoryId"
+    Food }o--o| Printer : "printerId"
+    FoodIngredient }|--|| Food : "foodId"
+    FoodIngredient }|--|| Ingredient : "ingredientId"
+    Order }o--o| User : "userId"
+    Order }o--o| CashRegister : "cashRegisterId"
+    OrderItem }|--|| Order : "orderId"
+    OrderItem }|--|| Food : "foodId"
+    User }|--|| Role : "roleId"
+    RefreshToken }|--|| User : "userId"
+    CashRegister }o--o| Printer : "defaultPrinterId"
+```
+
+## Model reference
+
+### Menu
+
+| Model | Table | Description |
+|---|---|---|
+| `Category` | `categories` | Groups of foods. Each category can be linked to a specific printer for ticket routing. |
+| `Food` | `foods` | Individual menu items. Belong to a category; can override the category printer. |
+| `Ingredient` | `ingredients` | A shared pool of ingredients. |
+| `FoodIngredient` | `food_ingredients` | Many-to-many join between `Food` and `Ingredient`. |
+
+### Orders
+
+| Model | Table | Description |
+|---|---|---|
+| `Order` | `orders` | A customer order. Tracks table, customer name, payment method, totals, and status lifecycle. |
+| `OrderItem` | `order_items` | A line item inside an order. Stores the food, quantity, unit price, and optional notes. |
+| `DailyTicketCounter` | — | Incremental counter reset daily, used to generate the human-readable `ticketNumber` printed on receipts. |
+
+#### Order status lifecycle
+
+```
+PENDING → CONFIRMED → COMPLETED → PICKED_UP
+```
+
+| Status | Meaning |
+|---|---|
+| `PENDING` | Order created, not yet confirmed by the cashier |
+| `CONFIRMED` | Payment taken, ticket printed |
+| `COMPLETED` | Food is ready for pickup |
+| `PICKED_UP` | Customer collected the order |
+
+### Users & authentication
+
+| Model | Table | Description |
+|---|---|---|
+| `Role` | `roles` | Named roles (e.g. `admin`, `cashier`). Controls API permissions. |
+| `User` | `users` | Operator accounts. Each user has one role. |
+| `RefreshToken` | `refresh_tokens` | JWT refresh tokens with expiry, revocation timestamp, and client metadata. |
+
+### Hardware
+
+| Model | Table | Description |
+|---|---|---|
+| `Printer` | `printers` | ESC/POS network printers (IP + port). Status tracked as `ONLINE`, `OFFLINE`, or `ERROR`. |
+| `CashRegister` | `cash_registers` | Named cash register stations. Each can have a default printer; orders are associated to a register. |

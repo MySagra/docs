@@ -1,0 +1,236 @@
+# Categories
+
+Manage menu categories (e.g. "Pizzeria", "Grill", "Drinks"). Categories group food items and can be toggled on/off to control availability.
+
+## Category Object
+
+```json
+{
+  "id": "clxyz123456789abcdef",
+  "name": "Pizzeria",
+  "available": true,
+  "position": 1
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier (CUID) |
+| `name` | `string` | Category name |
+| `available` | `boolean` | Whether the category is available for ordering |
+| `position` | `integer` | Display order position |
+
+---
+
+## GET `/v1/categories`
+
+Retrieve all categories with optional filtering.
+
+**Authentication:**
+- `available=true`: Public, no authentication required
+- Otherwise: Bearer token (admin)
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `available` | `boolean` | Filter by availability |
+| `include` | `string` | Set to `foods` to include food items with ingredients |
+
+### Response `200 OK`
+
+```json
+[
+  {
+    "id": "clxyz123456789abcdef",
+    "name": "Pizzeria",
+    "available": true,
+    "position": 1
+  }
+]
+```
+
+---
+
+## GET `/v1/categories/{id}`
+
+Retrieve a single category by ID.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Category ID (CUID) |
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `include` | `string` | Set to `foods` to include food items |
+
+### Response `200 OK`
+
+Returns a [Category Object](#category-object).
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Category not found |
+
+---
+
+## POST `/v1/categories`
+
+Create a new category.
+
+**Authentication:** Bearer token (admin)
+
+### Request Body
+
+```json
+{
+  "name": "Pizzeria",
+  "available": true,
+  "position": 1,
+  "printerId": "clxyz987654321fedcba"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | `string` | Yes | Category name |
+| `available` | `boolean` | No | Availability (default: `true`) |
+| `position` | `integer` | No | Display position |
+| `printerId` | `string \| null` | No | Associated printer ID |
+
+### Response `201 Created`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid request body |
+
+---
+
+## PUT `/v1/categories/{id}`
+
+Update an existing category (full replacement).
+
+**Authentication:** Bearer token (admin)
+
+> **Note:** Changing `available` will also update the availability of **all associated foods**. Changing `printerId` will also cascade to all associated foods — set to `null` to remove the printer association from the category and all its foods.
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Category ID (CUID) |
+
+### Request Body
+
+Same as [POST](#post-v1categories).
+
+### Response `200 OK`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid request body |
+| `404` | Category not found |
+| `409` | Category conflict |
+
+---
+
+## PATCH `/v1/categories/{id}`
+
+Partially update a category's availability or printer.
+
+**Authentication:** Bearer token (admin)
+
+> **Note:** Changing `available` will also update the availability of **all associated food items**. Changing `printerId` will also update the printer of **all associated foods** — set to `null` to remove the association.
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Category ID (CUID) |
+
+### Request Body
+
+```json
+{
+  "available": true,
+  "printerId": "clxyz987654321fedcba"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `available` | `boolean` | No | New availability status |
+| `printerId` | `string \| null` | No | New printer ID, or `null` to remove |
+
+### Response `200 OK`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Category not found |
+
+---
+
+## PATCH `/v1/categories/{id}/image`
+
+Upload or update the category image.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Category ID (CUID) |
+
+### Request Body
+
+`multipart/form-data` with the following field:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `image` | `file` | Yes | Image file to upload |
+
+### Response `200 OK`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid or missing image file |
+| `404` | Category not found |
+
+---
+
+## DELETE `/v1/categories/{id}`
+
+Delete a category.
+
+**Authentication:** Bearer token (admin)
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Category ID (CUID) |
+
+### Response `204 No Content`
+
+### Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Category not found |
