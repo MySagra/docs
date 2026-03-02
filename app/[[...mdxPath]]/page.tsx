@@ -8,13 +8,13 @@ export const generateStaticParams = generateStaticParamsFor('mdxPath')
 
 export async function generateMetadata(props: { params: Promise<{ mdxPath?: string[] }> }) {
   const params = await props.params
-  if (!params.mdxPath || params.mdxPath.length === 0) {
+  if (params.mdxPath?.length === 1 && params.mdxPath[0] === 'quick-start') {
     return {
       title: 'Quick Start – MySagra Docs',
       description: 'Deploy MySagra with Docker Compose in minutes.',
     }
   }
-  const { metadata } = await importPage(params.mdxPath)
+  const { metadata } = await importPage(params.mdxPath ?? [])
   return metadata
 }
 
@@ -45,8 +45,8 @@ function InlineCode({ children }: { children: string }) {
 export default async function Page(props: { params: Promise<{ mdxPath?: string[] }> }) {
   const params = await props.params
 
-  // Root "/" → custom Quick Start page
-  if (!params.mdxPath || params.mdxPath.length === 0) {
+  // "/quick-start" → custom Quick Start page
+  if (params.mdxPath?.length === 1 && params.mdxPath[0] === 'quick-start') {
     return (
       <Wrapper toc={[]} metadata={{ title: 'Quick Start', filePath: '' }} sourceCode={''}>
         <div className="mx-auto max-w-4xl px-6 py-16 space-y-16">

@@ -1,8 +1,10 @@
 export default {
     index: {
-        title: "Quick Start",
+        display: 'hidden',
+    },
+    'quick-start': {
+        title: 'Quick Start',
         type: 'page',
-        href: '/'
     },
     docs: {
         title: 'Documentation',
