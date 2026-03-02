@@ -1,13 +1,23 @@
 export default {
     index: {
-        display: 'hidden',
+        title: 'Introduction',
+    },
+    docs: {
+        title: 'Documentation',
+        type: 'page',
+        href: '/',
     },
     'quick-start': {
         title: 'Quick Start',
         type: 'page',
     },
-    docs: {
-        title: 'Documentation',
-        type: 'page'
-    }
+    self_hosting: {
+        title: 'Self Hosting',
+    },
+    database: {
+        title: 'Database',
+    },
+    api: {
+        title: 'API Reference',
+    },
 }

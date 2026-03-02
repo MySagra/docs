@@ -1,1 +1,38 @@
-# Quick Start
+# Introduction
+Welcome to the **MySagra** documentation.
+
+MySagra is an open-source event catering management platform designed for associations, festivals, and local events. It covers the full lifecycle of a food-service operation: menu management, order-taking at the counter, kitchen display, receipt printing, and administrator reporting — all running on hardware you own and control.
+
+## What's included
+
+| Service | Description |
+|---|---|
+| **MySagra API** | The core backend REST API. Handles menus, orders, users, authentication, and real-time events via SSE. |
+| **MySQL** | Primary relational database. |
+| **MyCassa** | Counter-side point-of-sale frontend. Runs on any browser, optimised for tablets and touchscreens. |
+| **MyAmministratore** | Admin dashboard for managing menus, categories, events, and viewing reports. |
+| **MyStampa** | Receipt and ticket printing service. Bridges the API and your thermal printers. |
+| **Nginx** | Reverse proxy with HTTPS termination. Recommended for any deployment. |
+
+## Architecture overview
+
+All services communicate over an internal Docker network (`mysagra-network`). Only Nginx is exposed to the outside world on ports `80`, `443`, and optionally `81` (admin panel). The API and database are never directly reachable from outside the host.
+
+```
+Internet / LAN
+     │
+     ▼
+  Nginx  (:80 → redirect, :443 MyCassa/API, :81 Admin)
+     │
+     ├──► MyCassa      (:7000)
+     ├──► MyAmministratore (:3000)
+     └──► MySagra API  (:4300)
+                │
+                └──► MySQL (:3306)
+```
+
+## Where to start
+
+- **[Quick Start](/quick-start)**  — generate your `docker-compose.yml`, `.env`, and `nginx.conf` in minutes and get the stack running
+- **[Self Hosting](/self_hosting)** — deep-dive into certificates, Nginx configuration, and production hardening
+- **[API Reference](/api)** — full REST API documentation
