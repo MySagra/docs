@@ -110,7 +110,7 @@ Content-Type: application/json
 }
 ```
 
-### GET /v1/banners/{id}
+### GET /v1/banners/\{id\}
 
 Retrieve a specific banner by ID. **Requires:** Bearer token.
 
@@ -121,7 +121,7 @@ Authorization: Bearer <token>
 
 **Response:** 200 OK
 
-### PUT /v1/banners/{id}
+### PUT /v1/banners/\{id\}
 
 Update a banner (full replacement). **Requires:** Bearer token (admin only).
 
@@ -146,7 +146,7 @@ Content-Type: application/json
 
 **Response:** 200 OK
 
-### PATCH /v1/banners/{id}/image
+### PATCH /v1/banners/\{id\}/image
 
 Upload or replace the banner image. **Requires:** Bearer token (admin only).
 
@@ -172,7 +172,7 @@ Content-Type: multipart/form-data
 }
 ```
 
-### DELETE /v1/banners/{id}
+### DELETE /v1/banners/\{id\}
 
 Delete a banner. **Requires:** Bearer token (admin only).
 

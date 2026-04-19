@@ -246,8 +246,7 @@ const SERVICES: ServiceDef[] = [
             { key: 'ADMIN_PASSWORD', value: 'change-me-admin-password' },
             { key: 'USE_SSE', value: 'true' },
             { key: 'SSE_URL', value: 'http://mysagra-api:4300/events/printer' },
-            { key: 'SINGLE_TICKET_CATEGORIES', value: '""' },
-            { key: 'MYSTAMPA_API_KEY', value: '__MYSTAMPA_API_KEY__' },
+            { key: 'MYSTAMPA_API_KEY', value: 'ms_pt_CHANGE_ME' },
         ],
     },
     {
@@ -328,7 +327,7 @@ const SERVICES: ServiceDef[] = [
         dependsOn: ['mysagra-backend'],
         envVars: [
             { key: 'AUTH_URL_CLIENTI', value: 'https://${SERVER_IP}:3034', comment: 'MyClienti' },
-            { key: 'MYCLIENTI_API_KEY', value: '__MYCLIENTI_API_KEY__' },
+            { key: 'MYCLIENTI_API_KEY', value: 'ms_wb_CHANGE_ME' },
             { key: 'REQUIRE_TABLE', value: 'false' },
         ],
     },
@@ -626,7 +625,7 @@ type Tab = 'compose' | 'env' | 'nginx'
 /* ─── Component ──────────────────────────────────────────── */
 
 export default function DockerComposeGenerator() {
-    const defaultIds = SERVICES.filter(s => s.required).map(s => s.id).concat('nginx')
+    const defaultIds = SERVICES.filter(s => s.required).map(s => s.id).concat(['nginx', 'redis', 'myamministratore'])
     const [selected, setSelected] = useState<Set<string>>(new Set(defaultIds))
     const [copied, setCopied] = useState<Tab | null>(null)
     const [activeTab, setActiveTab] = useState<Tab>('compose')
@@ -663,8 +662,6 @@ export default function DockerComposeGenerator() {
             .replace('__ROOT_PASSWORD__', secrets.ROOT_PASSWORD)
             .replace('__DB_USER_PASSWORD__', secrets.DB_USER_PASSWORD)
             .replace('__REDIS_PASS__', secrets.REDIS_PASS)
-            .replace('__MYSTAMPA_API_KEY__', 'ms_pt_' + secrets.MYSTAMPA_API_KEY)
-            .replace('__MYCLIENTI_API_KEY__', 'ms_wb_' + secrets.MYCLIENTI_API_KEY)
     }
 
     function toggle(id: string) {
@@ -705,9 +702,26 @@ export default function DockerComposeGenerator() {
             lines.push(`${ev.key}=${resolveValue(ev.value)}`)
         }
 
+        // API Keys section (top, after SERVER_IP)
+        const apiKeys: string[] = []
         for (const svc of active) {
             for (const ev of svc.envVars) {
-                if (seen.has(ev.key)) continue
+                if (ev.key.includes('API_KEY') && !seen.has(ev.key)) {
+                    apiKeys.push(`${ev.key}=${resolveValue(ev.value)}`)
+                    seen.add(ev.key)
+                }
+            }
+        }
+        if (apiKeys.length > 0) {
+            lines.push('')
+            lines.push('# API Keys')
+            lines.push(...apiKeys)
+        }
+
+        // Remaining service envVars
+        for (const svc of active) {
+            for (const ev of svc.envVars) {
+                if (seen.has(ev.key) || ev.key.includes('API_KEY')) continue
                 seen.add(ev.key)
                 // every var with a comment opens a new section
                 if (ev.comment) {
@@ -814,23 +828,24 @@ export default function DockerComposeGenerator() {
 
             <div className='flex flex-col gap-5'>
                 <span className="text-xs text-muted-foreground/70">
-                    * Secrets (JWT_SECRET, PEPPER, AUTH_SECRET, DB_USER_PASSWORD, ROOT_PASSWORD, REDIS_PASS, MYSTAMPA_API_KEY, MYCLIENTI_API_KEY) are randomly generated client-side on each page load. Click &quot;Regenerate&quot; to get new values.
+                    * Secrets (JWT_SECRET, PEPPER, AUTH_SECRET, DB_USER_PASSWORD, ROOT_PASSWORD, REDIS_PASS) are randomly generated client-side on each page load. Click &quot;Regenerate&quot; to get new values. Replace API key placeholders (ms_pt_CHANGE_ME, ms_wb_CHANGE_ME) with real keys after creating them in the admin panel.
                 </span>
 
                 {/* ── Output ── */}
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                            <div className="inline-flex rounded-lg border p-0.5 bg-muted/50">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div className="flex rounded-lg border p-0.5 bg-muted/50 overflow-x-auto max-w-sm">
                                 <button
                                     onClick={() => setActiveTab('compose')}
                                     className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === 'compose'
                                         ? 'bg-background shadow-sm text-foreground'
                                         : 'text-muted-foreground hover:text-foreground'
                                         }`}
+                                    title="docker-compose.yml"
                                 >
                                     <Container className="size-3.5" />
-                                    docker-compose.yml
+                                    <span className="hidden sm:inline">docker-compose.yml</span>
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('env')}
@@ -838,9 +853,10 @@ export default function DockerComposeGenerator() {
                                         ? 'bg-background shadow-sm text-foreground'
                                         : 'text-muted-foreground hover:text-foreground'
                                         }`}
+                                    title=".env"
                                 >
                                     <FileText className="size-3.5" />
-                                    .env
+                                    <span className="hidden sm:inline">.env</span>
                                 </button>
                                 {showNginxTab && (
                                     <button
@@ -849,13 +865,14 @@ export default function DockerComposeGenerator() {
                                             ? 'bg-background shadow-sm text-foreground'
                                             : 'text-muted-foreground hover:text-foreground'
                                             }`}
+                                        title="nginx.conf"
                                     >
                                         <Server className="size-3.5" />
-                                        nginx.conf
+                                        <span className="hidden sm:inline">nginx.conf</span>
                                     </button>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                                 {activeTab === 'env' && (
                                     <Button
                                         variant="ghost"
@@ -865,7 +882,8 @@ export default function DockerComposeGenerator() {
                                         title="Regenerate secrets"
                                     >
                                         <RefreshCw className="size-3.5" />
-                                        Regenerate
+                                        <span className="hidden sm:inline">Regenerate</span>
+                                        <span className="sm:hidden">Regenerate</span>
                                     </Button>
                                 )}
                                 {currentOutput && (
