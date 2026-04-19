@@ -95,6 +95,33 @@ Broadcasts real-time updates for the cashier interface when orders are created o
 }
 ```
 
+**Event:** `food-availability-changed` — Fired when food item availability is toggled.
+
+```json
+{
+  "foodId": "clx0def0002mx01example",
+  "available": false
+}
+```
+
+**Event:** `category-availability-changed` — Fired when a category's availability is toggled.
+
+```json
+{
+  "categoryId": "clx0cat0005mx01example",
+  "available": false
+}
+```
+
+**Event:** `printer-status-changed` — Fired when a printer's status changes.
+
+```json
+{
+  "printerId": "clx0prt0006mx01example",
+  "status": "OFFLINE"
+}
+```
+
 ---
 
 #### `display`
@@ -209,6 +236,16 @@ Broadcasts real-time updates for printers when a cashier confirms a new order.
       }
     }
   ]
+}
+```
+
+**Event:** `general-closure` — Fired when `POST /v1/reports/general-closure` is called to finalize event accounting. Triggers printers to output a closure report.
+
+```json
+{
+  "timestamp": "2026-01-15T23:59:00.000Z",
+  "totalOrders": 142,
+  "totalRevenue": "3521.50"
 }
 ```
 

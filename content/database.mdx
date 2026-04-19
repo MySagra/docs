@@ -87,6 +87,7 @@ erDiagram
         String id PK
         String name
         String ip
+        String mac
         Int port
         String description
         PrinterStatus status
@@ -96,6 +97,45 @@ erDiagram
         String name
         Boolean enabled
         String defaultPrinterId FK
+    }
+    ApiKey {
+        String id PK
+        String hash_key
+        String prefix
+        String last_digits
+        ApiKeyType type
+        String name
+        DateTime createdAt
+        DateTime lastUsedAt
+        DateTime revokedAt
+    }
+    Banner {
+        String id PK
+        String name
+        BannerType type
+        String title
+        String description
+        String website
+        String instagram
+        String facebook
+        String image
+        String color
+        DateTime dateTime
+    }
+    OrderInstruction {
+        String id PK
+        String text
+        Int position
+    }
+    Report {
+        String id PK
+        DateTime timestamp
+        Int intervalInMinutes
+        Decimal totalRevenue
+        Decimal totalCashRevenue
+        Decimal totalCardRevenue
+        Int totalOrders
+        Int averageCompletitionTime
     }
 
     Category }o--o| Printer : "printerId"
@@ -156,5 +196,14 @@ PENDING → CONFIRMED → COMPLETED → PICKED_UP
 
 | Model | Table | Description |
 |---|---|---|
-| `Printer` | `printers` | ESC/POS network printers (IP + port). Status tracked as `ONLINE`, `OFFLINE`, or `ERROR`. |
+| `Printer` | `printers` | ESC/POS network printers (IP + port). Status tracked as `ONLINE`, `OFFLINE`, or `ERROR`. MAC address optional for identification. |
 | `CashRegister` | `cash_registers` | Named cash register stations. Each can have a default printer; orders are associated to a register. |
+
+### Configuration & Reporting
+
+| Model | Table | Description |
+|---|---|---|
+| `ApiKey` | `api_keys` | Machine-to-machine authentication keys. Two types: `PRINTER` (prefix `ms_pt_`) and `WEBAPP` (prefix `ms_wb_`). |
+| `Banner` | `banners` | Promotional images for POS and customer screens. Type: `EVENT` (branding) or `SPONSOR` (logos). |
+| `OrderInstruction` | `order_instructions` | Instructional text shown to cashiers during order creation, sorted by position. |
+| `Report` | `reports` | Aggregated sales statistics snapshots, grouped by time window (hourly, daily, or full-period). |

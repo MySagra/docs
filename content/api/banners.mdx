@@ -1,0 +1,193 @@
+# Banners
+
+Banners are promotional images displayed in the MyCassa interface and customer-facing screens. Each banner has a type (event branding or sponsor logos) and can be toggled on/off.
+
+## Banner Object
+
+```json
+{
+  "id": "clx...",
+  "name": "Summer Festival 2026",
+  "type": "EVENT",
+  "title": "2026 Summer Festival",
+  "description": "Join us for a spectacular summer celebration",
+  "website": "https://example.com",
+  "instagram": "@summerfestival",
+  "facebook": "summerfestival2026",
+  "image": "https://your-domain.com/banners/summer-festival.jpg",
+  "color": "fecc01",
+  "dateTime": "2026-06-01T00:00:00Z",
+  "active": true
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Unique banner identifier |
+| `name` | string | Banner name |
+| `type` | `EVENT` &#124; `SPONSOR` | Banner category |
+| `title` | string | Display title |
+| `description` | string | Banner description/tagline |
+| `website` | string (URL) | Associated website URL |
+| `instagram` | string | Instagram handle |
+| `facebook` | string | Facebook page/ID |
+| `image` | string (URL) | Image URL |
+| `color` | string (hex) | Accent color (hex code without `#`) |
+| `dateTime` | ISO8601 | Event date/time |
+| `active` | boolean | Whether banner is visible |
+
+## Endpoints
+
+### GET /v1/banners
+
+List all banners. **Requires:** Bearer token.
+
+```
+GET /v1/banners
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+```json
+[
+  {
+    "id": "clx...",
+    "name": "Summer Festival 2026",
+    "type": "EVENT",
+    "title": "2026 Summer Festival",
+    "description": "Join us for a spectacular summer celebration",
+    "website": "https://example.com",
+    "instagram": "@summerfestival",
+    "facebook": "summerfestival2026",
+    "image": "https://your-domain.com/banners/summer-festival.jpg",
+    "color": "fecc01",
+    "dateTime": "2026-06-01T00:00:00Z",
+    "active": true
+  }
+]
+```
+
+### POST /v1/banners
+
+Create a new banner. **Requires:** Bearer token (admin only).
+
+```
+POST /v1/banners
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Summer Festival 2026",
+  "type": "EVENT",
+  "title": "2026 Summer Festival",
+  "description": "Join us for a spectacular summer celebration",
+  "website": "https://example.com",
+  "instagram": "@summerfestival",
+  "facebook": "summerfestival2026",
+  "color": "fecc01",
+  "dateTime": "2026-06-01T00:00:00Z",
+  "active": true
+}
+```
+
+**Response:** 201 Created
+
+```json
+{
+  "id": "clx...",
+  "name": "Summer Festival 2026",
+  "type": "EVENT",
+  "title": "2026 Summer Festival",
+  "description": "Join us for a spectacular summer celebration",
+  "website": "https://example.com",
+  "instagram": "@summerfestival",
+  "facebook": "summerfestival2026",
+  "image": null,
+  "color": "fecc01",
+  "dateTime": "2026-06-01T00:00:00Z",
+  "active": true
+}
+```
+
+### GET /v1/banners/{id}
+
+Retrieve a specific banner by ID. **Requires:** Bearer token.
+
+```
+GET /v1/banners/clx...
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+### PUT /v1/banners/{id}
+
+Update a banner (full replacement). **Requires:** Bearer token (admin only).
+
+```
+PUT /v1/banners/clx...
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Summer Festival 2026",
+  "type": "EVENT",
+  "title": "2026 Summer Festival",
+  "description": "Join us for a spectacular summer celebration",
+  "website": "https://example.com",
+  "instagram": "@summerfestival",
+  "facebook": "summerfestival2026",
+  "color": "fecc01",
+  "dateTime": "2026-06-01T00:00:00Z",
+  "active": true
+}
+```
+
+**Response:** 200 OK
+
+### PATCH /v1/banners/{id}/image
+
+Upload or replace the banner image. **Requires:** Bearer token (admin only).
+
+```
+PATCH /v1/banners/clx.../image
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+[multipart body with image field]
+```
+
+**Form field:** `image` (PNG or JPG file)
+
+**Response:** 200 OK
+
+```json
+{
+  "id": "clx...",
+  "name": "Summer Festival 2026",
+  "type": "EVENT",
+  "image": "https://your-domain.com/banners/summer-festival-abc123.jpg",
+  ...
+}
+```
+
+### DELETE /v1/banners/{id}
+
+Delete a banner. **Requires:** Bearer token (admin only).
+
+```
+DELETE /v1/banners/clx...
+Authorization: Bearer <token>
+```
+
+**Response:** 204 No Content
+
+## Error Responses
+
+| Status | Body | Description |
+|---|---|---|
+| 400 | `{ "error": "..." }` | Invalid request body or image format |
+| 401 | `{ "message": "Unauthorized" }` | Missing or invalid Bearer token |
+| 403 | `{ "message": "Forbidden" }` | Insufficient permissions (non-admin user) |
+| 404 | `{ "message": "Banner not found" }` | Banner ID does not exist |

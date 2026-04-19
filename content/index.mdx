@@ -9,26 +9,38 @@ MySagra is an open-source event catering management platform designed for associ
 |---|---|
 | **MySagra API** | The core backend REST API. Handles menus, orders, users, authentication, and real-time events via SSE. |
 | **MySQL** | Primary relational database. |
+| **Redis** | In-memory cache used by the backend for performance optimization. |
 | **MyCassa** | Counter-side point-of-sale frontend. Runs on any browser, optimised for tablets and touchscreens. |
 | **MyAmministratore** | Admin dashboard for managing menus, categories, events, and viewing reports. |
 | **MyStampa** | Receipt and ticket printing service. Bridges the API and your thermal printers. |
+| **MyNumeri** | Number queue display service for customer call-up. |
+| **MyClienti** | Client-facing webapp for placing or tracking orders. |
+| **DBGate** | Database administration UI for direct database inspection and management. |
 | **Nginx** | Reverse proxy with HTTPS termination. Recommended for any deployment. |
 
 ## Architecture overview
 
-All services communicate over an internal Docker network (`mysagra-network`). Only Nginx is exposed to the outside world on ports `80`, `443`, and optionally `81` (admin panel). The API and database are never directly reachable from outside the host.
+All services communicate over an internal Docker network (`mysagra-network`). Nginx is exposed to the outside world on ports `80` (redirects to HTTPS), `443` (MyCassa and API), `81` (admin panel), `3032` (MyStampa), `3033` (MyNumeri), and `3034` (MyClienti). DBGate is exposed directly on port `3000` without HTTPS. The API and database are never directly reachable from outside the host.
 
 ```
 Internet / LAN
      │
      ▼
-  Nginx  (:80 → redirect, :443 MyCassa/API, :81 Admin)
+  Nginx  (:80 → :443, :443, :81, :3032, :3033, :3034)
      │
-     ├──► MyCassa      (:7000)
-     ├──► MyAmministratore (:3000)
-     └──► MySagra API  (:4300)
-                │
-                └──► MySQL (:3306)
+     ├──► MyCassa           (:7000)
+     ├──► MyAmministratore  (:3000)
+     ├──► MyStampa          (:1234)
+     ├──► MyNumeri          (:3033)
+     ├──► MyClienti         (:3034)
+     └──► MySagra API       (:4300)
+          │                  │
+          ├──► MySQL        (:3306)
+          └──► Redis        (:6379)
+
+  DBGate (:3000, direct host port)
+     │
+     └──► MySQL (:3306)
 ```
 
 ## Where to start

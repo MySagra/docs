@@ -1,0 +1,129 @@
+# Reports
+
+Reports provide aggregated sales statistics and event data. Reports can be grouped by time window (hourly, daily) or retrieved as a full-period summary. A general closure finalizes the current event accounting.
+
+## Report Object
+
+```json
+{
+  "id": "clx...",
+  "timestamp": "2026-01-15T12:00:00Z",
+  "intervalInMinutes": 60,
+  "totalRevenue": "1250.50",
+  "totalCashRevenue": "800.00",
+  "totalCardRevenue": "450.50",
+  "totalOrders": 42,
+  "averageCompletitionTime": 8
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Unique report identifier |
+| `timestamp` | ISO8601 | Report time period start |
+| `intervalInMinutes` | integer | Time window in minutes |
+| `totalRevenue` | string | Total revenue (decimal as string) |
+| `totalCashRevenue` | string | Cash payment revenue |
+| `totalCardRevenue` | string | Card payment revenue |
+| `totalOrders` | integer | Number of orders in period |
+| `averageCompletitionTime` | integer | Average order completion time in minutes |
+
+## Endpoints
+
+### GET /v1/reports
+
+Retrieve reports grouped by time window. **Requires:** Bearer token (admin only).
+
+```
+GET /v1/reports?groupBy=1h
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+
+| Parameter | Value | Description |
+|---|---|---|
+| `groupBy` | `1h` &#124; `4h` &#124; `12h` &#124; `day` &#124; `all` | Time window grouping. Default: `all` |
+
+**Response:** 200 OK
+
+```json
+[
+  {
+    "id": "clx...",
+    "timestamp": "2026-01-15T12:00:00Z",
+    "intervalInMinutes": 60,
+    "totalRevenue": "1250.50",
+    "totalCashRevenue": "800.00",
+    "totalCardRevenue": "450.50",
+    "totalOrders": 42,
+    "averageCompletitionTime": 8
+  },
+  {
+    "id": "clx...",
+    "timestamp": "2026-01-15T13:00:00Z",
+    "intervalInMinutes": 60,
+    "totalRevenue": "980.30",
+    "totalCashRevenue": "620.00",
+    "totalCardRevenue": "360.30",
+    "totalOrders": 35,
+    "averageCompletitionTime": 7
+  }
+]
+```
+
+### GET /v1/reports/{id}
+
+Retrieve a specific report by ID. **Requires:** Bearer token (admin only).
+
+```
+GET /v1/reports/clx...
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+```json
+{
+  "id": "clx...",
+  "timestamp": "2026-01-15T12:00:00Z",
+  "intervalInMinutes": 60,
+  "totalRevenue": "1250.50",
+  "totalCashRevenue": "800.00",
+  "totalCardRevenue": "450.50",
+  "totalOrders": 42,
+  "averageCompletitionTime": 8
+}
+```
+
+### POST /v1/reports/general-closure
+
+Trigger a general closure event. This finalizes the current event period and sends a `general-closure` SSE event to the printer channel, which triggers thermal printers to output a closure report.
+
+**Requires:** Bearer token (admin only).
+
+```
+POST /v1/reports/general-closure
+Authorization: Bearer <token>
+```
+
+**Response:** 201 Created
+
+```json
+{
+  "id": "clx...",
+  "timestamp": "2026-01-15T23:59:00Z",
+  "totalOrders": 142,
+  "totalRevenue": "3521.50"
+}
+```
+
+The `general-closure` event is broadcast to the `printer` SSE channel and includes closure data. See [Events (SSE)](/api/events) for details on the SSE payload.
+
+## Error Responses
+
+| Status | Body | Description |
+|---|---|---|
+| 401 | `{ "message": "Unauthorized" }` | Missing or invalid Bearer token |
+| 403 | `{ "message": "Forbidden" }` | Insufficient permissions (non-admin user) |
+| 404 | `{ "message": "Report not found" }` | Report ID does not exist |

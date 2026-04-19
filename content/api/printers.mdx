@@ -9,6 +9,7 @@ Manage thermal printers used for order ticket printing. Printers can be assigned
   "id": "clx1a2b3c4d5e6f7g8h9i0j1",
   "name": "Kitchen Printer",
   "ip": "192.168.1.200",
+  "mac": "00:1A:2B:3C:4D:5E",
   "port": 9100,
   "description": "Printer located in the kitchen",
   "status": "ONLINE"
@@ -20,6 +21,7 @@ Manage thermal printers used for order ticket printing. Printers can be assigned
 | `id` | `string` | Unique identifier (CUID) |
 | `name` | `string` | Printer name |
 | `ip` | `string` | IP address |
+| `mac` | `string` | MAC address (optional, for identification) |
 | `port` | `integer` | Port number (default: `9100`) |
 | `description` | `string` | Printer description |
 | `status` | `string` | `ONLINE`, `OFFLINE`, or `ERROR` |
@@ -85,6 +87,7 @@ Create a new printer.
 {
   "name": "Kitchen Printer",
   "ip": "192.168.1.200",
+  "mac": "00:1A:2B:3C:4D:5E",
   "port": 9100,
   "description": "Printer located in the kitchen",
   "status": "ONLINE"
@@ -95,6 +98,7 @@ Create a new printer.
 |-------|------|----------|-------------|
 | `name` | `string` | Yes | Printer name |
 | `ip` | `string` | Yes | IP address |
+| `mac` | `string` | No | MAC address (optional, for identification) |
 | `port` | `integer` | No | Port (default: `9100`) |
 | `description` | `string` | No | Description |
 | `status` | `string` | No | `ONLINE`, `OFFLINE`, or `ERROR` (default: `ONLINE`) |

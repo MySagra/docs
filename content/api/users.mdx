@@ -118,9 +118,9 @@ Returns the created [User Object](#user-object).
 
 ---
 
-## PUT `/v1/users/{id}`
+## PATCH `/v1/users/{id}`
 
-Update an existing user.
+Update a user's role.
 
 **Authentication:** Bearer token (admin)
 
@@ -134,16 +134,12 @@ Update an existing user.
 
 ```json
 {
-  "username": "john_doe",
-  "password": "newpassword123",
   "roleId": "clxyz123456789abcdef"
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `username` | `string` | Yes | Username (min 6 characters) |
-| `password` | `string` | Yes | Password (min 8 characters) |
 | `roleId` | `string` | Yes | Role ID to assign |
 
 ### Response `200 OK`

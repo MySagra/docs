@@ -1,0 +1,128 @@
+# Order Instructions
+
+Order instructions are short text directives displayed to cashiers during order creation. They appear in a sorted list, helping guide the ordering process.
+
+## OrderInstruction Object
+
+```json
+{
+  "id": "clx...",
+  "text": "Always confirm table number before proceeding",
+  "position": 1
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Unique instruction identifier |
+| `text` | string | Instruction text (up to 500 characters) |
+| `position` | integer | Display order (lower = earlier) |
+
+## Endpoints
+
+### GET /v1/order-instructions
+
+List all order instructions, sorted by position. **Requires:** Bearer token.
+
+```
+GET /v1/order-instructions
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+```json
+[
+  {
+    "id": "clx...",
+    "text": "Always confirm table number before proceeding",
+    "position": 1
+  },
+  {
+    "id": "clx...",
+    "text": "Check for dietary restrictions",
+    "position": 2
+  }
+]
+```
+
+### POST /v1/order-instructions
+
+Create a new order instruction. **Requires:** Bearer token (admin only).
+
+```
+POST /v1/order-instructions
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "text": "Always confirm table number before proceeding",
+  "position": 1
+}
+```
+
+**Response:** 201 Created
+
+```json
+{
+  "id": "clx...",
+  "text": "Always confirm table number before proceeding",
+  "position": 1
+}
+```
+
+### GET /v1/order-instructions/{id}
+
+Retrieve a specific instruction by ID. **Requires:** Bearer token.
+
+```
+GET /v1/order-instructions/clx...
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+```json
+{
+  "id": "clx...",
+  "text": "Always confirm table number before proceeding",
+  "position": 1
+}
+```
+
+### PUT /v1/order-instructions/{id}
+
+Update an instruction (full replacement). **Requires:** Bearer token (admin only).
+
+```
+PUT /v1/order-instructions/clx...
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "text": "Always confirm table number and special requests",
+  "position": 1
+}
+```
+
+**Response:** 200 OK
+
+### DELETE /v1/order-instructions/{id}
+
+Delete an instruction. **Requires:** Bearer token (admin only).
+
+```
+DELETE /v1/order-instructions/clx...
+Authorization: Bearer <token>
+```
+
+**Response:** 204 No Content
+
+## Error Responses
+
+| Status | Body | Description |
+|---|---|---|
+| 400 | `{ "error": "..." }` | Invalid request body |
+| 401 | `{ "message": "Unauthorized" }` | Missing or invalid Bearer token |
+| 403 | `{ "message": "Forbidden" }` | Insufficient permissions (non-admin user) |
+| 404 | `{ "message": "Instruction not found" }` | Instruction ID does not exist |

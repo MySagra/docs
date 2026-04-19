@@ -1,0 +1,126 @@
+# API Keys
+
+API keys allow non-human clients (like MyStampa and MyClienti) to authenticate with the API without requiring a user session. Each API key is associated with a type that determines its use case.
+
+## Key Types
+
+| Type | Prefix | Description | Used By |
+|---|---|---|---|
+| `PRINTER` | `ms_pt_` | For print service integrations | MyStampa |
+| `WEBAPP` | `ms_wb_` | For web application integrations | MyClienti |
+
+## Authentication
+
+To use an API key, include it in the `X-API-KEY` header:
+
+```
+X-API-KEY: ms_pt_<key>
+```
+
+or
+
+```
+X-API-KEY: ms_wb_<key>
+```
+
+API key authentication is accepted by specific endpoints that support it (e.g., service authentication).
+
+## API Key Object
+
+```json
+{
+  "id": "clx...",
+  "name": "MyStampa",
+  "type": "PRINTER",
+  "createdAt": "2026-01-15T10:30:00Z",
+  "lastUsedAt": "2026-01-15T15:45:30Z"
+}
+```
+
+**Note:** The `key` field (the actual secret) is returned **only once** when the API key is created. Store it securely and never share it.
+
+## Endpoints
+
+### GET /v1/api-keys
+
+List all API keys. **Requires:** Bearer token (admin only).
+
+```
+GET /v1/api-keys
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+```json
+[
+  {
+    "id": "clx...",
+    "name": "MyStampa",
+    "type": "PRINTER",
+    "createdAt": "2026-01-15T10:30:00Z",
+    "lastUsedAt": "2026-01-15T15:45:30Z"
+  }
+]
+```
+
+### POST /v1/api-keys
+
+Create a new API key. **Requires:** Bearer token (admin only). The key is returned **only in this response**.
+
+```
+POST /v1/api-keys
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "MyStampa",
+  "type": "PRINTER"
+}
+```
+
+**Response:** 201 Created
+
+```json
+{
+  "id": "clx...",
+  "name": "MyStampa",
+  "type": "PRINTER",
+  "key": "ms_pt_abcd1234efgh5678ijkl9012mnop3456",
+  "createdAt": "2026-01-15T10:30:00Z"
+}
+```
+
+### GET /v1/api-keys/{id}
+
+Retrieve a specific API key by ID. **Requires:** Bearer token (admin only).
+
+```
+GET /v1/api-keys/clx...
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+```json
+{
+  "id": "clx...",
+  "name": "MyStampa",
+  "type": "PRINTER",
+  "createdAt": "2026-01-15T10:30:00Z",
+  "lastUsedAt": "2026-01-15T15:45:30Z"
+}
+```
+
+### DELETE /v1/api-keys/{id}
+
+Revoke (delete) an API key. **Requires:** Bearer token (admin only).
+
+```
+DELETE /v1/api-keys/clx...
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+Once revoked, the key will no longer authenticate requests.

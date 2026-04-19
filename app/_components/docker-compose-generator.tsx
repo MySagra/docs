@@ -247,6 +247,120 @@ const SERVICES: ServiceDef[] = [
             { key: 'USE_SSE', value: 'true' },
             { key: 'SSE_URL', value: 'http://mysagra-api:4300/events/printer' },
             { key: 'SINGLE_TICKET_CATEGORIES', value: '""' },
+            { key: 'MYSTAMPA_API_KEY', value: '__MYSTAMPA_API_KEY__' },
+        ],
+    },
+    {
+        id: 'redis',
+        label: 'Redis',
+        description: 'In-memory cache for the backend',
+        category: 'core',
+        compose: `  redis:
+    image: redis:alpine
+    container_name: redis
+    command: redis-server --requirepass \${REDIS_PASS}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - mysagra-network`,
+        volumes: ['redis_data'],
+        networks: ['mysagra-network'],
+        envVars: [
+            { key: 'REDIS_PASS', value: '__REDIS_PASS__', comment: 'Redis' },
+            { key: 'REDIS_URL', value: 'redis://:${REDIS_PASS}@redis:6379' },
+        ],
+    },
+    {
+        id: 'mynumeri',
+        label: 'MyNumeri',
+        description: 'Number queue display service',
+        category: 'service',
+        compose: `  mynumeri:
+    image: ghcr.io/mysagra/mysagra-mynumeri:latest
+    container_name: mynumeri
+    restart: always
+    ports:
+      - "3033:3033"
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - AUTH_URL=\${AUTH_URL_NUMERI}
+      - NODE_EXTRA_CA_CERTS=/app/rootCA.pem
+    volumes:
+      - ./rootCA.pem:/app/rootCA.pem:ro
+    networks:
+      - mysagra-network`,
+        networks: ['mysagra-network'],
+        dependsOn: ['mysagra-backend'],
+        envVars: [
+            { key: 'AUTH_URL_NUMERI', value: 'https://${SERVER_IP}:3033', comment: 'MyNumeri' },
+        ],
+    },
+    {
+        id: 'myclienti',
+        label: 'MyClienti',
+        description: 'Client-facing order placement webapp',
+        category: 'service',
+        compose: `  myclienti:
+    image: ghcr.io/mysagra/mysagra-myclienti:latest
+    container_name: myclienti
+    restart: always
+    ports:
+      - "3034:3034"
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - AUTH_URL=\${AUTH_URL_CLIENTI}
+      - NODE_EXTRA_CA_CERTS=/app/rootCA.pem
+    volumes:
+      - ./rootCA.pem:/app/rootCA.pem:ro
+    networks:
+      - mysagra-network`,
+        networks: ['mysagra-network'],
+        dependsOn: ['mysagra-backend'],
+        envVars: [
+            { key: 'AUTH_URL_CLIENTI', value: 'https://${SERVER_IP}:3034', comment: 'MyClienti' },
+            { key: 'MYCLIENTI_API_KEY', value: '__MYCLIENTI_API_KEY__' },
+            { key: 'REQUIRE_TABLE', value: 'false' },
+        ],
+    },
+    {
+        id: 'dbgate',
+        label: 'DBGate',
+        description: 'Database administration UI',
+        category: 'utility',
+        compose: `  dbgate:
+    image: dbgate/dbgate:latest
+    container_name: mysagra-dbgate
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      - DBGATE_USER=\${DBGATE_USER}
+      - DBGATE_PASSWORD=\${DBGATE_PASSWORD}
+      - CONNECTIONS=con1
+      - con1_driver=mysql
+      - con1_server=db
+      - con1_port=3306
+      - con1_user=\${DB_USER:-mysagra}
+      - con1_password=\${DB_USER_PASSWORD}
+      - con1_database=\${MYSQL_DATABASE:-mysagra}
+    networks:
+      - mysagra-network`,
+        networks: ['mysagra-network'],
+        dependsOn: ['db'],
+        envVars: [
+            { key: 'DBGATE_USER', value: 'admin', comment: 'DBGate' },
+            { key: 'DBGATE_PASSWORD', value: 'change-me-dbgate-password' },
         ],
     },
     {
@@ -269,9 +383,14 @@ function buildNginxCompose(selected: Set<string>): string {
     if (selected.has('mysagra-backend')) deps.push('      - mysagra-backend')
     if (selected.has('mycassa')) deps.push('      - mycassa')
     if (selected.has('myamministratore')) deps.push('      - myamministratore')
+    if (selected.has('mynumeri')) deps.push('      - mynumeri')
+    if (selected.has('myclienti')) deps.push('      - myclienti')
 
     const ports = ['      - "80:80"', '      - "443:443"']
     if (selected.has('myamministratore')) ports.push('      - "81:81"')
+    if (selected.has('mynumeri')) ports.push('      - "3033:3033"')
+    if (selected.has('myclienti')) ports.push('      - "3034:3034"')
+    if (selected.has('mystampa')) ports.push('      - "3032:3032"')
 
     return `  nginx:
     image: nginx:alpine
@@ -292,6 +411,9 @@ function generateNginxConf(selected: Set<string>): string {
     const hasApi = selected.has('mysagra-backend')
     const hasCassa = selected.has('mycassa')
     const hasAdmin = selected.has('myamministratore')
+    const hasNumeri = selected.has('mynumeri')
+    const hasClienti = selected.has('myclienti')
+    const hasStampa = selected.has('mystampa')
 
     const cassaSseBlock = hasCassa ? `
         location /api/events/ {
@@ -362,6 +484,27 @@ function generateNginxConf(selected: Set<string>): string {
             add_header Content-Type text/plain;
         }`
 
+    const stampaBlock = hasStampa ? `
+
+    # --- MyStampa (port 3032) ---
+    server {
+        listen 3032 ssl;
+        server_name \${SERVER_IP} localhost;
+        ssl_certificate /etc/nginx/certs/cert.pem;
+        ssl_certificate_key /etc/nginx/certs/key.pem;
+
+        location / {
+            proxy_pass http://mystampa-stampa:1234/;
+            proxy_set_header Host $host:$server_port;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+            expires -1;
+            add_header Pragma "no-cache";
+            add_header Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0";
+        }
+    }` : ''
+
     const adminBlock = hasAdmin ? `
 
     # --- Admin panel (port 81) ---
@@ -373,6 +516,48 @@ function generateNginxConf(selected: Set<string>): string {
 
         location / {
             proxy_pass http://myamministratore-amministratore:3000/;
+            proxy_set_header Host $host:$server_port;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+            expires -1;
+            add_header Pragma "no-cache";
+            add_header Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0";
+        }
+    }` : ''
+
+    const numeriBlock = hasNumeri ? `
+
+    # --- MyNumeri (port 3033) ---
+    server {
+        listen 3033 ssl;
+        server_name \${SERVER_IP} localhost;
+        ssl_certificate /etc/nginx/certs/cert.pem;
+        ssl_certificate_key /etc/nginx/certs/key.pem;
+
+        location / {
+            proxy_pass http://mynumeri:3033/;
+            proxy_set_header Host $host:$server_port;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+            expires -1;
+            add_header Pragma "no-cache";
+            add_header Cache-Control "no-store, no-cache, must-revalidate, post-check=0, pre-check=0";
+        }
+    }` : ''
+
+    const clientiBlock = hasClienti ? `
+
+    # --- MyClienti (port 3034) ---
+    server {
+        listen 3034 ssl;
+        server_name \${SERVER_IP} localhost;
+        ssl_certificate /etc/nginx/certs/cert.pem;
+        ssl_certificate_key /etc/nginx/certs/key.pem;
+
+        location / {
+            proxy_pass http://myclienti:3034/;
             proxy_set_header Host $host:$server_port;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -420,7 +605,7 @@ http {
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ciphers HIGH:!aNULL:!MD5;
 ${cassaSseBlock}${sseApiBlock}${apiBlock}${rootBlock}
-    }${adminBlock}
+    }${stampaBlock}${adminBlock}${numeriBlock}${clientiBlock}
 }`
 }
 
@@ -452,6 +637,9 @@ export default function DockerComposeGenerator() {
         AUTH_SECRET: generateSecret(),
         ROOT_PASSWORD: generateSecret(16),
         DB_USER_PASSWORD: generateSecret(16),
+        REDIS_PASS: generateSecret(16),
+        MYSTAMPA_API_KEY: generateSecret(32),
+        MYCLIENTI_API_KEY: generateSecret(32),
     }))
 
     function regenerateSecrets() {
@@ -461,6 +649,9 @@ export default function DockerComposeGenerator() {
             AUTH_SECRET: generateSecret(),
             ROOT_PASSWORD: generateSecret(16),
             DB_USER_PASSWORD: generateSecret(16),
+            REDIS_PASS: generateSecret(16),
+            MYSTAMPA_API_KEY: generateSecret(32),
+            MYCLIENTI_API_KEY: generateSecret(32),
         })
     }
 
@@ -471,6 +662,9 @@ export default function DockerComposeGenerator() {
             .replace('__AUTH_SECRET__', secrets.AUTH_SECRET)
             .replace('__ROOT_PASSWORD__', secrets.ROOT_PASSWORD)
             .replace('__DB_USER_PASSWORD__', secrets.DB_USER_PASSWORD)
+            .replace('__REDIS_PASS__', secrets.REDIS_PASS)
+            .replace('__MYSTAMPA_API_KEY__', 'ms_pt_' + secrets.MYSTAMPA_API_KEY)
+            .replace('__MYCLIENTI_API_KEY__', 'ms_wb_' + secrets.MYCLIENTI_API_KEY)
     }
 
     function toggle(id: string) {
@@ -620,7 +814,7 @@ export default function DockerComposeGenerator() {
 
             <div className='flex flex-col gap-5'>
                 <span className="text-xs text-muted-foreground/70">
-                    * Secrets (JWT_SECRET, PEPPER, AUTH_SECRET, DB_USER_PASSWORD, ROOT_PASSWORD) are randomly generated client-side on each page load. Click &quot;Regenerate&quot; to get new values.
+                    * Secrets (JWT_SECRET, PEPPER, AUTH_SECRET, DB_USER_PASSWORD, ROOT_PASSWORD, REDIS_PASS, MYSTAMPA_API_KEY, MYCLIENTI_API_KEY) are randomly generated client-side on each page load. Click &quot;Regenerate&quot; to get new values.
                 </span>
 
                 {/* ── Output ── */}

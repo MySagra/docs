@@ -1,0 +1,69 @@
+# Roles
+
+Roles define the permission level for users within the MySagra system. Currently, roles are read-only via the API and are managed at the database level.
+
+## Role Object
+
+```json
+{
+  "id": "clx...",
+  "name": "admin"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Unique role identifier |
+| `name` | string | Role name (e.g., `admin`, `user`) |
+
+## Endpoints
+
+### GET /v1/roles
+
+List all available roles. **Requires:** Bearer token (admin only).
+
+```
+GET /v1/roles
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+```json
+[
+  {
+    "id": "clx...",
+    "name": "admin"
+  },
+  {
+    "id": "clx...",
+    "name": "user"
+  }
+]
+```
+
+### GET /v1/roles/{id}
+
+Retrieve a specific role by ID. **Requires:** Bearer token (admin only).
+
+```
+GET /v1/roles/clx...
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+
+```json
+{
+  "id": "clx...",
+  "name": "admin"
+}
+```
+
+## Error Responses
+
+| Status | Body | Description |
+|---|---|---|
+| 401 | `{ "message": "Unauthorized" }` | Missing or invalid Bearer token |
+| 403 | `{ "message": "Forbidden" }` | Insufficient permissions (non-admin user) |
+| 404 | `{ "message": "Role not found" }` | Role ID does not exist |

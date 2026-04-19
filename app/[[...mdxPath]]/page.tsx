@@ -55,7 +55,7 @@ export default async function Page(props: { params: Promise<{ mdxPath?: string[]
           <div>
             <h1 className="text-4xl font-extrabold tracking-tight mb-3">Quick Start</h1>
             <p className="text-lg text-muted-foreground">
-              Deploy MySagra on your server in three steps — no prior configuration needed.
+              Deploy MySagra on your server in four steps — no prior configuration needed.
             </p>
           </div>
 
@@ -260,12 +260,24 @@ mkcert -key-file certs\\key.pem -cert-file certs\\cert.pem localhost 127.0.0.1 Y
                       <td className="py-2"><InlineCode>https://SERVER_IP</InlineCode> (port 443)</td>
                     </tr>
                     <tr>
-                      <td className="py-2 pr-6">Admin panel</td>
+                      <td className="py-2 pr-6">Admin panel (MyAmministratore)</td>
                       <td className="py-2"><InlineCode>https://SERVER_IP:81</InlineCode></td>
                     </tr>
                     <tr>
-                      <td className="py-2 pr-6">Print service</td>
-                      <td className="py-2"><InlineCode>https://SERVER_IP:1234</InlineCode></td>
+                      <td className="py-2 pr-6">MyStampa</td>
+                      <td className="py-2"><InlineCode>https://SERVER_IP:3032</InlineCode></td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 pr-6">MyNumeri</td>
+                      <td className="py-2"><InlineCode>https://SERVER_IP:3033</InlineCode></td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 pr-6">MyClienti</td>
+                      <td className="py-2"><InlineCode>https://SERVER_IP:3034</InlineCode></td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 pr-6">DBGate</td>
+                      <td className="py-2"><InlineCode>http://SERVER_IP:3000</InlineCode></td>
                     </tr>
                   </tbody>
                 </table>
@@ -311,6 +323,70 @@ sudo update-ca-certificates`}</CodeBlock>
                 <InlineCode>rootCA.pem</InlineCode>. On <strong className="text-foreground">iOS / iPadOS</strong>{' '}
                 AirDrop or email yourself the file, tap it to install, then go to{' '}
                 <em>Settings → General → VPN &amp; Device Management → Certificate Trust Settings</em> and enable full trust.
+              </p>
+            </div>
+          </section>
+
+          {/* ══════════════════════════════════════════════════
+              STEP 4 — Create API Keys
+          ══════════════════════════════════════════════════ */}
+          <section>
+            <StepHeader
+              n={4}
+              title="Create API keys"
+              description="Certain services authenticate with the API via API key. Create them in the admin panel before those services can connect."
+            />
+
+            <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+              <span className="mt-0.5 text-amber-500 text-base leading-none"><TriangleAlert /></span>
+              <p className="text-muted-foreground">
+                MyStampa and MyClienti will fail to authenticate with the API until you create and register their API keys.
+                The <strong className="text-foreground font-semibold">.env</strong> file pre-generates placeholder values in Step 1,
+                but you must create matching keys in the admin panel before the services will work.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-base font-semibold mb-3">How to create API keys</h3>
+                <ol className="list-decimal list-inside space-y-3 text-sm text-muted-foreground">
+                  <li>
+                    <strong className="text-foreground">Open the admin panel</strong> at{' '}
+                    <InlineCode>https://SERVER_IP:81</InlineCode> and log in after Step 3 has completed.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Navigate to Settings → API Keys → New key</strong>.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">For MyStampa:</strong> select type <InlineCode>PRINTER</InlineCode>,
+                    {' '} name it <InlineCode>MyStampa</InlineCode>, and click Create.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Copy the generated key</strong> (starts with <InlineCode>ms_pt_</InlineCode>)
+                    {' '} and paste it into your <InlineCode>.env</InlineCode> file as the value for{' '}
+                    <InlineCode>MYSTAMPA_API_KEY</InlineCode>.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Repeat for MyClienti:</strong> create a <InlineCode>WEBAPP</InlineCode> type
+                    {' '} key named <InlineCode>MyClienti</InlineCode>, copy the <InlineCode>ms_wb_</InlineCode> key,
+                    {' '} and paste into <InlineCode>MYCLIENTI_API_KEY</InlineCode>.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Restart the affected services:</strong>
+                  </li>
+                </ol>
+                <div className="mt-3">
+                  <CodeBlock label="bash / PowerShell">
+                    docker compose restart mystampa myclienti
+                  </CodeBlock>
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-foreground">Note:</strong> The <InlineCode>.env</InlineCode> tab in Step 1 pre-generates
+                {' '} placeholder values for <InlineCode>MYSTAMPA_API_KEY</InlineCode> and <InlineCode>MYCLIENTI_API_KEY</InlineCode>.
+                {' '} You can replace them with the real keys after creating them in the admin panel, or regenerate the placeholders
+                {' '} if you prefer to use different values.
               </p>
             </div>
           </section>

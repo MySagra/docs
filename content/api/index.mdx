@@ -28,6 +28,8 @@ Authorization: Bearer <accessToken>
 
 Obtain tokens via the [Authentication](/api/authentication) endpoints. Access tokens expire after **15 minutes**; use the refresh endpoint to obtain new ones.
 
+Some service endpoints accept **API keys** via the `X-API-KEY` header. See [Authentication](/api/authentication) and [API Keys](/api/api-keys) for details.
+
 <Callout type="warning">
   The default credentials are `admin` / `admin`. For security reasons, change your password immediately after the first login using the [Users](/api/users) endpoints.
 </Callout>
@@ -68,12 +70,17 @@ or
 
 | Resource | Description |
 |----------|------------|
-| [Authentication](/api/authentication) | Login, logout and token refresh |
+| [Authentication](/api/authentication) | Login, logout, token refresh, and API key auth |
+| [API Keys](/api/api-keys) | API key management for service integrations |
+| [Roles](/api/roles) | User role lookup |
 | [Users](/api/users) | User management (admin only) |
 | [Categories](/api/categories) | Menu category management |
 | [Foods](/api/foods) | Food item management |
 | [Ingredients](/api/ingredients) | Ingredient management |
 | [Orders](/api/orders) | Order lifecycle management |
+| [Reports](/api/reports) | Sales reporting and event closure |
+| [Banners](/api/banners) | Promotional banners for POS interface |
+| [Order Instructions](/api/order-instructions) | Cashier instructions during ordering |
 | [Printers](/api/printers) | Thermal printer management |
 | [Cash Registers](/api/cash-registers) | Cash register management |
 | [Events (SSE)](/api/events) | Real-time Server-Sent Events |

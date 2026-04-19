@@ -9,6 +9,32 @@ The Auth endpoints handle user login, logout, and token refresh. MySagra uses **
 | **Access Token** | Response body / `Authorization` header | 15 minutes |
 | **Refresh Token** | HTTP-only cookie (`refreshToken`) | 7 days |
 
+## Bearer Token Authentication
+
+Use the JWT access token in the `Authorization` header for all protected API endpoints:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+The token is valid for 15 minutes. When it expires, use the refresh token to obtain a new one.
+
+## API Key Authentication
+
+Certain services (MyStampa, MyClienti) authenticate using an API key instead of a JWT. Include the key in the `X-API-KEY` header:
+
+```
+X-API-KEY: ms_pt_<key>
+```
+
+or
+
+```
+X-API-KEY: ms_wb_<key>
+```
+
+API keys are created via the [API Keys](/api/api-keys) endpoints and are specific to service integrations. They are accepted only by endpoints that explicitly support API key authentication.
+
 ---
 
 ## POST `/auth/login`
