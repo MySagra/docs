@@ -8,14 +8,25 @@ export const generateStaticParams = generateStaticParamsFor('mdxPath')
 
 export async function generateMetadata(props: { params: Promise<{ mdxPath?: string[] }> }) {
   const params = await props.params
-  if (params.mdxPath?.length === 1 && params.mdxPath[0] === 'quick-start') {
+  const mdxPath = params.mdxPath ?? []
+
+  if (mdxPath.length > 0 && mdxPath[0]?.startsWith('.')) {
+    return { title: 'MySagra Docs' }
+  }
+
+  if (mdxPath.length === 1 && mdxPath[0] === 'quick-start') {
     return {
       title: 'Quick Start – MySagra Docs',
       description: 'Deploy MySagra with Docker Compose in minutes.',
     }
   }
-  const { metadata } = await importPage(params.mdxPath ?? [])
-  return metadata
+
+  try {
+    const { metadata } = await importPage(mdxPath)
+    return metadata
+  } catch {
+    return { title: 'MySagra Docs' }
+  }
 }
 
 const Wrapper = getMDXComponents({}).wrapper
