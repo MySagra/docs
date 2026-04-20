@@ -3,6 +3,15 @@
 import { useRef, useEffect, useState } from 'react'
 import { ZoomIn, ZoomOut, Move } from 'lucide-react'
 
+declare global {
+  interface Window {
+    mermaid: {
+      initialize: (config: { startOnLoad: boolean; theme: string }) => void
+      contentLoaded: () => void
+    }
+  }
+}
+
 export function ERDiagram() {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
