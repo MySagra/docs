@@ -41,6 +41,9 @@ function generateSecret(bytes = 32): string {
 
 const GLOBAL_ENV: EnvVar[] = [
     { key: 'SERVER_IP', value: 'your-server-ip-or-domain', comment: 'General' },
+    { key: 'API_URL', value: 'http://mysagra-api:4300' },
+    { key: 'REQUIRE_TABLE', value: 'false' },
+    { key: 'AUTH_SECRET', value: '__AUTH_SECRET__' },
 ]
 
 /* ─── Service definitions ───────────────────────────────────── */
@@ -159,16 +162,18 @@ const SERVICES: ServiceDef[] = [
         category: 'service',
         compose: `  mycassa:
     image: ghcr.io/mysagra/mysagra-mycassa:latest
-    container_name: mycassa-cassa
+    container_name: mycassa
     restart: always
-    ports:
-      - "7000:7000"
     env_file:
       - .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=\${NODE_ENV:-production}
       - AUTH_URL=\${AUTH_URL_CASSA}
       - NODE_EXTRA_CA_CERTS=/app/rootCA.pem
+      - REQUIRE_TABLE=\${REQUIRE_TABLE}
+    depends_on:
+      mysagra-backend:
+        condition: service_healthy
     volumes:
       - ./rootCA.pem:/app/rootCA.pem:ro
     networks:
@@ -176,8 +181,6 @@ const SERVICES: ServiceDef[] = [
         networks: ['mysagra-network'],
         dependsOn: ['mysagra-backend'],
         envVars: [
-            { key: 'API_URL', value: 'http://mysagra-api:4300', comment: 'MyCassa & MyAmministratore' },
-            { key: 'AUTH_SECRET', value: '__AUTH_SECRET__' },
             { key: 'AUTH_URL_CASSA', value: 'https://${SERVER_IP}', comment: 'MyCassa' },
         ],
     },
@@ -188,26 +191,25 @@ const SERVICES: ServiceDef[] = [
         category: 'service',
         compose: `  myamministratore:
     image: ghcr.io/mysagra/mysagra-myamministratore:latest
-    container_name: myamministratore-amministratore
+    container_name: myamministratore
     restart: always
-    ports:
-      - "3000:3000"
     env_file:
       - .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=\${NODE_ENV:-production}
       - AUTH_URL=\${AUTH_URL_AMMINISTRATORE}
       - NODE_EXTRA_CA_CERTS=/app/rootCA.pem
     volumes:
       - ./rootCA.pem:/app/rootCA.pem:ro
+    depends_on:
+      mysagra-backend:
+        condition: service_healthy
     networks:
       - mysagra-network`,
         networks: ['mysagra-network'],
         dependsOn: ['mysagra-backend'],
         envVars: [
             { key: 'AUTH_URL_AMMINISTRATORE', value: 'https://${SERVER_IP}:81', comment: 'MyAmministratore' },
-            { key: 'API_URL', value: 'http://mysagra-api:4300' },
-            { key: 'AUTH_SECRET', value: '__AUTH_SECRET__' },
         ],
     },
     {
@@ -217,36 +219,28 @@ const SERVICES: ServiceDef[] = [
         category: 'service',
         compose: `  mystampa:
     image: ghcr.io/mysagra/mysagra-mystampa:latest
-    container_name: mystampa-stampa
+    container_name: mystampa
     restart: always
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=\${NODE_ENV:-production}
+      - API_KEY=\${MYSTAMPA_API_KEY}
+      - API_URL=\${API_URL}
+    volumes:
+      - ./assets:/app/assets
+      - mystampa_config:/app/data
     depends_on:
       mysagra-backend:
         condition: service_healthy
-    ports:
-      - "1234:1234"
-    env_file:
-      - .env
-    volumes:
-      - ./assets:/app/assets
-    environment:
-      - NODE_ENV=production
-      - ADMIN_USERNAME=\${ADMIN_USERNAME}
-      - ADMIN_PASSWORD=\${ADMIN_PASSWORD}
-      - USE_SSE=\${USE_SSE}
-      - SSE_URL=\${SSE_URL}
-      - EXTERNAL_BASE_URL=\${API_URL}
-      - SINGLE_TICKET_CATEGORIES=\${SINGLE_TICKET_CATEGORIES}
-      - PORT=1234
     networks:
       - mysagra-network`,
         networks: ['mysagra-network'],
+        volumes: ['mystampa_config'],
         dependsOn: ['mysagra-backend'],
         envVars: [
-            { key: 'ADMIN_USERNAME', value: 'admin', comment: 'MyStampa' },
-            { key: 'ADMIN_PASSWORD', value: 'change-me-admin-password' },
-            { key: 'USE_SSE', value: 'true' },
-            { key: 'SSE_URL', value: 'http://mysagra-api:4300/events/printer' },
-            { key: 'MYSTAMPA_API_KEY', value: 'ms_pt_CHANGE_ME' },
+            { key: 'MYSTAMPA_API_KEY', value: 'ms_pt_CHANGE_ME', comment: 'MyStampa' },
+            { key: 'API_URL', value: 'http://mysagra-api:4300' },
         ],
     },
     {
@@ -286,18 +280,22 @@ const SERVICES: ServiceDef[] = [
     image: ghcr.io/mysagra/mysagra-mynumeri:latest
     container_name: mynumeri
     restart: always
-    ports:
-      - "3033:3033"
-    env_file: .env
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=\${NODE_ENV:-production}
       - AUTH_URL=\${AUTH_URL_NUMERI}
       - NODE_EXTRA_CA_CERTS=/app/rootCA.pem
+    depends_on:
+      mysagra-backend:
+        condition: service_healthy
     volumes:
       - ./rootCA.pem:/app/rootCA.pem:ro
+      - mynumeri_data:/app/data
     networks:
       - mysagra-network`,
         networks: ['mysagra-network'],
+        volumes: ['mynumeri_data'],
         dependsOn: ['mysagra-backend'],
         envVars: [
             { key: 'AUTH_URL_NUMERI', value: 'https://${SERVER_IP}:3033', comment: 'MyNumeri' },
@@ -312,13 +310,16 @@ const SERVICES: ServiceDef[] = [
     image: ghcr.io/mysagra/mysagra-myclienti:latest
     container_name: myclienti
     restart: always
-    ports:
-      - "3034:3034"
-    env_file: .env
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=production
-      - AUTH_URL=\${AUTH_URL_CLIENTI}
+      - NODE_ENV=\${NODE_ENV:-production}
+      - CLIENTI_API_KEY=\${MYCLIENTI_API_KEY}
+      - REQUIRE_TABLE=\${REQUIRE_TABLE}
       - NODE_EXTRA_CA_CERTS=/app/rootCA.pem
+    depends_on:
+      mysagra-backend:
+        condition: service_healthy
     volumes:
       - ./rootCA.pem:/app/rootCA.pem:ro
     networks:
@@ -326,9 +327,7 @@ const SERVICES: ServiceDef[] = [
         networks: ['mysagra-network'],
         dependsOn: ['mysagra-backend'],
         envVars: [
-            { key: 'AUTH_URL_CLIENTI', value: 'https://${SERVER_IP}:3034', comment: 'MyClienti' },
-            { key: 'MYCLIENTI_API_KEY', value: 'ms_wb_CHANGE_ME' },
-            { key: 'REQUIRE_TABLE', value: 'false' },
+            { key: 'MYCLIENTI_API_KEY', value: 'ms_wb_CHANGE_ME', comment: 'MyClienti' },
         ],
     },
     {
@@ -416,7 +415,7 @@ function generateNginxConf(selected: Set<string>): string {
 
     const cassaSseBlock = hasCassa ? `
         location /api/events/ {
-            proxy_pass http://mycassa-cassa:7000;
+            proxy_pass http://mycassa:3031;
             proxy_buffering off;
             proxy_cache off;
             gzip off;
@@ -469,7 +468,7 @@ function generateNginxConf(selected: Set<string>): string {
             allow 127.0.0.1;
             deny all;
 
-            proxy_pass http://mycassa-cassa:7000/;
+            proxy_pass http://mycassa:3031/;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -491,9 +490,10 @@ function generateNginxConf(selected: Set<string>): string {
         server_name \${SERVER_IP} localhost;
         ssl_certificate /etc/nginx/certs/cert.pem;
         ssl_certificate_key /etc/nginx/certs/key.pem;
+        error_page 497 https://$host:3032$request_uri;
 
         location / {
-            proxy_pass http://mystampa-stampa:1234/;
+            proxy_pass http://mystampa:3032/;
             proxy_set_header Host $host:$server_port;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -512,9 +512,10 @@ function generateNginxConf(selected: Set<string>): string {
         server_name \${SERVER_IP} localhost;
         ssl_certificate /etc/nginx/certs/cert.pem;
         ssl_certificate_key /etc/nginx/certs/key.pem;
+        error_page 497 https://$host:81$request_uri;
 
         location / {
-            proxy_pass http://myamministratore-amministratore:3000/;
+            proxy_pass http://myamministratore:3000/;
             proxy_set_header Host $host:$server_port;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -533,6 +534,7 @@ function generateNginxConf(selected: Set<string>): string {
         server_name \${SERVER_IP} localhost;
         ssl_certificate /etc/nginx/certs/cert.pem;
         ssl_certificate_key /etc/nginx/certs/key.pem;
+        error_page 497 https://$host:3033$request_uri;
 
         location / {
             proxy_pass http://mynumeri:3033/;
@@ -554,6 +556,7 @@ function generateNginxConf(selected: Set<string>): string {
         server_name \${SERVER_IP} localhost;
         ssl_certificate /etc/nginx/certs/cert.pem;
         ssl_certificate_key /etc/nginx/certs/key.pem;
+        error_page 497 https://$host:3034$request_uri;
 
         location / {
             proxy_pass http://myclienti:3034/;
@@ -718,8 +721,21 @@ export default function DockerComposeGenerator() {
             lines.push(...apiKeys)
         }
 
+        // DBGate section (after API Keys)
+        const dbgate = active.find(s => s.id === 'dbgate')
+        if (dbgate && dbgate.envVars) {
+            lines.push('')
+            for (const ev of dbgate.envVars) {
+                if (seen.has(ev.key)) continue
+                seen.add(ev.key)
+                if (ev.comment) lines.push(`# ${ev.comment}`)
+                lines.push(`${ev.key}=${resolveValue(ev.value)}`)
+            }
+        }
+
         // Remaining service envVars
         for (const svc of active) {
+            if (svc.id === 'dbgate') continue  // skip dbgate, already processed
             for (const ev of svc.envVars) {
                 if (seen.has(ev.key) || ev.key.includes('API_KEY')) continue
                 seen.add(ev.key)
@@ -743,10 +759,25 @@ export default function DockerComposeGenerator() {
         const uniqueVolumes = [...new Set(allVolumes)]
         const allNetworks = active.flatMap(s => s.networks ?? [])
         const uniqueNetworks = [...new Set(allNetworks)]
+        const hasNginx = selected.has('nginx')
 
         let out = `name: mysagra\n\nservices:\n`
         out += active
-            .map(s => s.id === 'nginx' ? buildNginxCompose(selected) : s.compose)
+            .map(s => {
+                if (s.id === 'nginx') return buildNginxCompose(selected)
+                if (!hasNginx && ['mycassa', 'myamministratore', 'mystampa', 'mynumeri', 'myclienti'].includes(s.id)) {
+                    const portMap: Record<string, [string, string]> = {
+                        mycassa: ['3031', '3031'],
+                        myamministratore: ['81', '3000'],
+                        mystampa: ['3032', '3032'],
+                        mynumeri: ['3033', '3033'],
+                        myclienti: ['3034', '3034'],
+                    }
+                    const [externalPort, internalPort] = portMap[s.id]
+                    return s.compose + `\n    ports:\n      - "${externalPort}:${internalPort}"`
+                }
+                return s.compose
+            })
             .join('\n\n')
 
         if (uniqueVolumes.length > 0) {
