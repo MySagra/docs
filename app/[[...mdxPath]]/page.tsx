@@ -56,6 +56,11 @@ function InlineCode({ children }: { children: string }) {
 export default async function Page(props: { params: Promise<{ mdxPath?: string[] }> }) {
   const params = await props.params
 
+  // Skip non-content paths (e.g., .well-known)
+  if (params.mdxPath?.length && params.mdxPath[0]?.startsWith('.')) {
+    return <Wrapper toc={[]} metadata={{ title: 'MySagra Docs', filePath: '' }} sourceCode={''}><div /></Wrapper>
+  }
+
   // "/quick-start" → custom Quick Start page
   if (params.mdxPath?.length === 1 && params.mdxPath[0] === 'quick-start') {
     return (

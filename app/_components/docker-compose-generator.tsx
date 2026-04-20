@@ -835,39 +835,39 @@ export default function DockerComposeGenerator() {
                 <Card>
                     <CardHeader>
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                            <div className="flex rounded-lg border p-0.5 bg-muted/50 overflow-x-auto max-w-sm">
+                            <div className="flex rounded-lg border p-0.5 bg-muted/50 overflow-x-auto gap-0.5 flex-1 sm:flex-none">
                                 <button
                                     onClick={() => setActiveTab('compose')}
-                                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === 'compose'
+                                    className={`flex-1 sm:flex-none inline-flex items-center justify-center sm:justify-start gap-1.5 rounded-md px-2 py-2 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'compose'
                                         ? 'bg-background shadow-sm text-foreground'
                                         : 'text-muted-foreground hover:text-foreground'
                                         }`}
                                     title="docker-compose.yml"
                                 >
-                                    <Container className="size-3.5" />
+                                    <Container className="size-5 sm:size-3.5" />
                                     <span className="hidden sm:inline">docker-compose.yml</span>
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('env')}
-                                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === 'env'
+                                    className={`flex-1 sm:flex-none inline-flex items-center justify-center sm:justify-start gap-1.5 rounded-md px-2 py-2 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'env'
                                         ? 'bg-background shadow-sm text-foreground'
                                         : 'text-muted-foreground hover:text-foreground'
                                         }`}
                                     title=".env"
                                 >
-                                    <FileText className="size-3.5" />
+                                    <FileText className="size-5 sm:size-3.5" />
                                     <span className="hidden sm:inline">.env</span>
                                 </button>
                                 {showNginxTab && (
                                     <button
                                         onClick={() => setActiveTab('nginx')}
-                                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === 'nginx'
+                                        className={`flex-1 sm:flex-none inline-flex items-center justify-center sm:justify-start gap-1.5 rounded-md px-2 py-2 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'nginx'
                                             ? 'bg-background shadow-sm text-foreground'
                                             : 'text-muted-foreground hover:text-foreground'
                                             }`}
                                         title="nginx.conf"
                                     >
-                                        <Server className="size-3.5" />
+                                        <Server className="size-5 sm:size-3.5" />
                                         <span className="hidden sm:inline">nginx.conf</span>
                                     </button>
                                 )}

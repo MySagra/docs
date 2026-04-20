@@ -4,7 +4,9 @@ MySagra uses **MySQL** as its primary database, managed via [Prisma ORM](https:/
 
 ## ER Diagram
 
+<div className="overflow-x-auto border rounded-lg bg-muted/30">
 ```mermaid
+%%{init: {'flowchart': {'htmlLabels': true}, 'theme': 'base', 'themeVariables': {'primaryColor': '#fff9e6', 'primaryBorderColor': '#d4af37', 'fontSize': '12px'}}}%%
 erDiagram
     Category {
         String id PK
@@ -57,11 +59,6 @@ erDiagram
         Decimal unitSurcharge
         Decimal total
         String notes
-    }
-    DailyTicketCounter {
-        String id PK
-        DateTime date
-        Int counter
     }
     Role {
         String id PK
@@ -137,6 +134,27 @@ erDiagram
         Int totalOrders
         Int averageCompletitionTime
     }
+    CategoryStats {
+        String id PK
+        String categoryId FK
+        String reportId FK
+        Int itemsSold
+        Decimal revenue
+    }
+    FoodStats {
+        String id PK
+        String foodId FK
+        String reportId FK
+        Int itemsSold
+        Decimal revenue
+    }
+    UserStats {
+        String id PK
+        String userId FK
+        String reportId FK
+        Int ordersProcessed
+        Decimal totalHandled
+    }
 
     Category }o--o| Printer : "printerId"
     Food }o--|| Category : "categoryId"
@@ -150,7 +168,16 @@ erDiagram
     User }|--|| Role : "roleId"
     RefreshToken }|--|| User : "userId"
     CashRegister }o--o| Printer : "defaultPrinterId"
+    CategoryStats }|--|| Category : "categoryId"
+    CategoryStats }|--|| Report : "reportId"
+    FoodStats }|--|| Food : "foodId"
+    FoodStats }|--|| Report : "reportId"
+    UserStats }|--|| User : "userId"
+    UserStats }|--|| Report : "reportId"
 ```
+</div>
+
+> **Tip:** Use browser zoom (Ctrl/Cmd + scroll) to pan and zoom the diagram, or drag horizontally to scroll on smaller screens.
 
 ## Model reference
 
@@ -169,7 +196,6 @@ erDiagram
 |---|---|---|
 | `Order` | `orders` | A customer order. Tracks table, customer name, payment method, totals, and status lifecycle. |
 | `OrderItem` | `order_items` | A line item inside an order. Stores the food, quantity, unit price, and optional notes. |
-| `DailyTicketCounter` | — | Incremental counter reset daily, used to generate the human-readable `ticketNumber` printed on receipts. |
 
 #### Order status lifecycle
 
@@ -206,4 +232,7 @@ PENDING → CONFIRMED → COMPLETED → PICKED_UP
 | `ApiKey` | `api_keys` | Machine-to-machine authentication keys. Two types: `PRINTER` (prefix `ms_pt_`) and `WEBAPP` (prefix `ms_wb_`). |
 | `Banner` | `banners` | Promotional images for POS and customer screens. Type: `EVENT` (branding) or `SPONSOR` (logos). |
 | `OrderInstruction` | `order_instructions` | Instructional text shown to cashiers during order creation, sorted by position. |
-| `Report` | `reports` | Aggregated sales statistics snapshots, grouped by time window (hourly, daily, or full-period). |
+| `Report` | `reports` | Aggregated sales statistics snapshots, grouped by time window (hourly, daily, or full-period). Linked to granular stats per category, food, and user. |
+| `CategoryStats` | `category_stats` | Per-category sales metrics for a given report period. Tracks items sold and revenue by category. |
+| `FoodStats` | `food_stats` | Per-food sales metrics for a given report period. Tracks items sold and revenue by menu item. |
+| `UserStats` | `user_stats` | Per-operator performance metrics for a given report period. Tracks orders processed and total cash/card handled. |
