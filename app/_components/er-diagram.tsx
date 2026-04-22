@@ -64,7 +64,7 @@ export function ERDiagram() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 my-3">
       <div className="flex gap-2">
         <button
           onClick={() => handleZoom('in')}

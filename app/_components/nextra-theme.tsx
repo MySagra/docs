@@ -11,7 +11,7 @@ import { Logo } from './logo'
 
 export const banner = (
   <Banner storageKey="mysagra-1.4.0">
-    MySagra 1.4.0 is released 🎉
+    MySagra 1.5.0 is released 🎉
   </Banner>
 )
 

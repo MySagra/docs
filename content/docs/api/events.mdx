@@ -239,13 +239,24 @@ Broadcasts real-time updates for printers when a cashier confirms a new order.
 }
 ```
 
-**Event:** `general-closure` — Fired when `POST /v1/reports/general-closure` is called to finalize event accounting. Triggers printers to output a closure report.
+**Event:** `general-closure` — Fired when `POST /v1/reports/general-closure` is called to finalize event accounting. Triggers printers to output a closure report. This event returns a complete [Report](./reports#report-object) object grouped by total, containing aggregated statistics starting from 7:00 AM of the current day up to the moment the closure is called.
 
 ```json
 {
+  "id": "clx...",
   "timestamp": "2026-01-15T23:59:00.000Z",
+  "intervalInMinutes": 1019,
+  "totalRevenue": 3521.50,
+  "totalCashRevenue": 2000.00,
+  "totalCardRevenue": 1521.50,
   "totalOrders": 142,
-  "totalRevenue": "3521.50"
+  "averageCompletitionTime": null,
+  "categoryStats": [
+    // ... CategoryStats Objects
+  ],
+  "cashRegisterStats": [
+    // ... CashRegisterStats Objects
+  ]
 }
 ```
 

@@ -6,15 +6,14 @@ The Auth endpoints handle user login, logout, and token refresh. MySagra uses **
 
 | Token | Storage | Expiry |
 |-------|---------|--------|
-| **Access Token** | Response body / `Authorization` header | 15 minutes |
-| **Refresh Token** | HTTP-only cookie (`refreshToken`) | 7 days |
+| **mysagra_token** | HTTP-only cookie (`refreshToken`) | 6 hours |
 
-## Bearer Token Authentication
+## Cookie Token Authentication
 
-Use the JWT access token in the `Authorization` header for all protected API endpoints:
+Use the `mysagra_token` in the `Authorization` header for all protected API endpoints:
 
 ```
-Authorization: Bearer <accessToken>
+Cookie: mysagra_token=YOUR_AUTH_TOKEN
 ```
 
 The token is valid for 15 minutes. When it expires, use the refresh token to obtain a new one.

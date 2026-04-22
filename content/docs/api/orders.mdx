@@ -23,20 +23,22 @@ Returned by `GET /v1/orders` (lightweight, without item details):
   "subTotal": "25.50",
   "status": "pending",
   "createdAt": "2025-11-04T10:30:00Z",
-  "updatedAt": "2025-11-04T10:30:00Z"
+  "confirmedAt": "2025-11-04T10:30:00Z",
+  "completedAt": "2025-11-04T10:30:00Z"
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `string` | Unique identifier (CUID) |
-| `displayCode` | `string` | 3-character alphanumeric order code |
-| `table` | `string` | Table number or identifier |
-| `customer` | `string` | Customer name |
-| `subTotal` | `string` | Subtotal before discount |
-| `status` | `string` | `pending`, `confirmed`, `completed`, or `picked_up` |
-| `createdAt` | `string` | ISO 8601 creation timestamp |
-| `updatedAt` | `string` | ISO 8601 last update timestamp |
+| Field         | Type     | Description                                         |
+| ------------- | -------- | --------------------------------------------------- |
+| `id`          | `string` | Unique identifier (CUID)                            |
+| `displayCode` | `string` | 3-character alphanumeric order code                 |
+| `table`       | `string` | Table number or identifier                          |
+| `customer`    | `string` | Customer name                                       |
+| `subTotal`    | `string` | Subtotal before discount                            |
+| `status`      | `string` | `pending`, `confirmed`, `completed`, or `picked_up` |
+| `createdAt`   | `string` | ISO 8601 creation timestamp                         |
+| `confirmedAt` | `string` | ISO 8601 last update timestamp, it can be `null`    |
+| `completedAt` | `string` | ISO 8601 last update timestamp, it can be `null`     |
 
 ## Order Object (Detail)
 
@@ -50,6 +52,8 @@ Returned by `GET /v1/orders/{id}` (items grouped by category with ingredients):
   "customer": "Mario Rossi",
   "subTotal": "25.50",
   "createdAt": "2025-11-12T10:30:00.000Z",
+  "confirmedAt": "2025-11-12T10:30:00.000Z",
+  "completedAt": null",
   "categorizedItems": [
     {
       "category": { "id": 1, "name": "Pizza" },
@@ -58,9 +62,9 @@ Returned by `GET /v1/orders/{id}` (items grouped by category with ingredients):
           "id": "clm1234567890",
           "quantity": 2,
           "notes": "No onions, extra cheese",
-          "unitPrice": 8.50,
+          "unitPrice": 8.5,
           "unitSurcharge": 0.75,
-          "total": 18.50,
+          "total": 18.5,
           "food": {
             "id": "clx1a2b3c4d5e6f7g8h9i0j1",
             "name": "Pizza Margherita",
@@ -83,12 +87,12 @@ Returned by `GET /v1/orders/{id}` (items grouped by category with ingredients):
 
 Used when creating or confirming orders:
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `foodId` | `string` | Yes | Food item ID (CUID) |
-| `quantity` | `integer` | Yes | Quantity (min: 1) |
-| `notes` | `string` | No | Notes for this item |
-| `surcharge` | `number` | No | Extra surcharge (default: `0`) |
+| Field       | Type      | Required | Description                    |
+| ----------- | --------- | -------- | ------------------------------ |
+| `foodId`    | `string`  | Yes      | Food item ID (CUID)            |
+| `quantity`  | `integer` | Yes      | Quantity (min: 1)              |
+| `notes`     | `string`  | No       | Notes for this item            |
+| `surcharge` | `number`  | No       | Extra surcharge (default: `0`) |
 
 ---
 
@@ -100,16 +104,16 @@ Retrieve orders with advanced filtering and pagination.
 
 ### Query Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `search` | `string` | — | Search by customer, table, or order code |
-| `displayCode` | `string` | — | Filter by display code |
-| `page` | `integer` | `1` | Page number (1-based) |
-| `limit` | `integer` | `20` | Items per page (max 100) |
-| `sortBy` | `string` | `createdAt` | Sort field |
-| `status` | `string[]` | — | Filter by status (repeatable) |
-| `dateFrom` | `datetime` | — | Start date filter (inclusive) |
-| `dateTo` | `datetime` | — | End date filter (inclusive) |
+| Parameter     | Type       | Default     | Description                              |
+| ------------- | ---------- | ----------- | ---------------------------------------- |
+| `search`      | `string`   | —           | Search by customer, table, or order code |
+| `displayCode` | `string`   | —           | Filter by display code                   |
+| `page`        | `integer`  | `1`         | Page number (1-based)                    |
+| `limit`       | `integer`  | `20`        | Items per page (max 100)                 |
+| `sortBy`      | `string`   | `createdAt` | Sort field                               |
+| `status`      | `string[]` | —           | Filter by status (repeatable)            |
+| `dateFrom`    | `datetime` | —           | Start date filter (inclusive)            |
+| `dateTo`      | `datetime` | —           | End date filter (inclusive)              |
 
 ### Example
 
@@ -124,24 +128,19 @@ GET /v1/orders?status=CONFIRMED&status=COMPLETED&page=1&limit=10&dateFrom=2025-1
   "orders": [ ... ],
   "pagination": {
     "currentPage": 1,
-    "totalOrdersPages": 5,
-    "totalOrdersItems": 100,
-    "itemsPerPage": 20,
-    "hasNextPage": true,
-    "hasPrevPage": false,
-    "nextPage": 2,
-    "prevPage": null
+    "totalItems": 20,
+    "totalPages": 15
   }
 }
 ```
 
 ### Errors
 
-| Status | Description |
-|--------|-------------|
-| `400` | Invalid query parameters |
-| `401` | Unauthorized — authentication required |
-| `403` | Forbidden — insufficient permissions |
+| Status | Description                            |
+| ------ | -------------------------------------- |
+| `400`  | Invalid query parameters               |
+| `401`  | Unauthorized — authentication required |
+| `403`  | Forbidden — insufficient permissions   |
 
 ---
 
@@ -153,9 +152,9 @@ Retrieve complete order details with items grouped by category.
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | `integer` | Numeric order ID |
+| Parameter | Type      | Description      |
+| --------- | --------- | ---------------- |
+| `id`      | `integer` | Numeric order ID |
 
 ### Response `200 OK`
 
@@ -163,12 +162,12 @@ Returns an [Order Detail Object](#order-object-detail).
 
 ### Errors
 
-| Status | Description |
-|--------|-------------|
-| `400` | Invalid order ID format |
-| `401` | Unauthorized — authentication required |
-| `403` | Forbidden — insufficient permissions |
-| `404` | Order not found |
+| Status | Description                            |
+| ------ | -------------------------------------- |
+| `400`  | Invalid order ID format                |
+| `401`  | Unauthorized — authentication required |
+| `403`  | Forbidden — insufficient permissions   |
+| `404`  | Order not found                        |
 
 ---
 
@@ -189,34 +188,34 @@ Create a new order, optionally confirming it immediately.
       "foodId": "clx1a2b3c4d5e6f7g8h9i0j1",
       "quantity": 2,
       "notes": "No onions, extra cheese",
-      "surcharge": 1.50
+      "surcharge": 1.5
     }
   ],
   "confirm": {
     "paymentMethod": "CASH",
-    "discount": 2.50,
+    "discount": 2.5,
     "userId": "clx1a2b3c4d5e6f7g8h9i0j1",
     "cashRegisterId": "clx9z8y7x6w5v4u3t2s1r0q9"
   }
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `table` | `string` | Yes | Table number (min 1 char) |
-| `customer` | `string` | Yes | Customer name (min 1 char) |
-| `orderItems` | `array` | Yes | At least one [Order Item Input](#order-item-input) |
-| `confirm` | `object` | No | If provided, order is created as `CONFIRMED` |
+| Field        | Type     | Required | Description                                        |
+| ------------ | -------- | -------- | -------------------------------------------------- |
+| `table`      | `string` | Yes      | Table number (min 1 char)                          |
+| `customer`   | `string` | Yes      | Customer name (min 1 char)                         |
+| `orderItems` | `array`  | Yes      | At least one [Order Item Input](#order-item-input) |
+| `confirm`    | `object` | No       | If provided, order is created as `CONFIRMED`       |
 
 ### Confirm Object
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `paymentMethod` | `string` | Yes | `CASH` or `CARD` |
-| `discount` | `number` | No | Discount amount (default: `0`) |
-| `userId` | `string` | No | User who confirmed |
-| `cashRegisterId` | `string` | No | Cash register used |
-| `orderItems` | `array` | No | Replace existing items |
+| Field            | Type     | Required | Description                    |
+| ---------------- | -------- | -------- | ------------------------------ |
+| `paymentMethod`  | `string` | Yes      | `CASH` or `CARD`               |
+| `discount`       | `number` | No       | Discount amount (default: `0`) |
+| `userId`         | `string` | No       | User who confirmed             |
+| `cashRegisterId` | `string` | No       | Cash register used             |
+| `orderItems`     | `array`  | No       | Replace existing items         |
 
 ### Price Calculation
 
@@ -245,11 +244,11 @@ Create a new order, optionally confirming it immediately.
 
 ### Errors
 
-| Status | Description |
-|--------|-------------|
-| `400` | Invalid request or food items not found |
-| `401` | Unauthorized — authentication required |
-| `403` | Forbidden — insufficient permissions |
+| Status | Description                             |
+| ------ | --------------------------------------- |
+| `400`  | Invalid request or food items not found |
+| `401`  | Unauthorized — authentication required  |
+| `403`  | Forbidden — insufficient permissions    |
 
 ---
 
@@ -261,9 +260,9 @@ Confirm a **PENDING** order.
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | `integer` | Order ID (must be PENDING) |
+| Parameter | Type      | Description                |
+| --------- | --------- | -------------------------- |
+| `id`      | `integer` | Order ID (must be PENDING) |
 
 ### Request Body
 
@@ -278,19 +277,19 @@ Confirm a **PENDING** order.
       "foodId": "clm1234567890",
       "quantity": 2,
       "notes": "Extra spicy",
-      "surcharge": 1.50
+      "surcharge": 1.5
     }
   ]
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `paymentMethod` | `string` | Yes | `CASH` or `CARD` |
-| `discount` | `number` | No | Discount amount (default: `0`) |
-| `userId` | `string` | No | User who confirmed |
-| `cashRegisterId` | `string` | No | Cash register used |
-| `orderItems` | `array` | No | If provided, replaces all existing items |
+| Field            | Type     | Required | Description                              |
+| ---------------- | -------- | -------- | ---------------------------------------- |
+| `paymentMethod`  | `string` | Yes      | `CASH` or `CARD`                         |
+| `discount`       | `number` | No       | Discount amount (default: `0`)           |
+| `userId`         | `string` | No       | User who confirmed                       |
+| `cashRegisterId` | `string` | No       | Cash register used                       |
+| `orderItems`     | `array`  | No       | If provided, replaces all existing items |
 
 > **Ticket numbers** are daily progressive and reset at 12:00 PM.
 
@@ -300,13 +299,13 @@ Returns the confirmed order with ticket number and payment details.
 
 ### Errors
 
-| Status | Description |
-|--------|-------------|
-| `400` | Invalid items, or order is already confirmed |
-| `401` | Unauthorized — authentication required |
-| `403` | Forbidden — insufficient permissions |
-| `404` | Order not found |
-| `500` | Internal server error |
+| Status | Description                                  |
+| ------ | -------------------------------------------- |
+| `400`  | Invalid items, or order is already confirmed |
+| `401`  | Unauthorized — authentication required       |
+| `403`  | Forbidden — insufficient permissions         |
+| `404`  | Order not found                              |
+| `500`  | Internal server error                        |
 
 ---
 
@@ -318,41 +317,40 @@ Trigger a reprint of selected order items by broadcasting a `reprint-order` even
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | `integer` | Numeric order ID |
+| Parameter | Type      | Description      |
+| --------- | --------- | ---------------- |
+| `id`      | `integer` | Numeric order ID |
 
 ### Request Body
 
 ```json
 {
-  "orderItems": [
-    { "id": "clx0abc0001mx01example" }
-  ],
+  "orderItems": [{ "id": "clx0abc0001mx01example" }],
   "reprintReceipt": false
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `orderItems` | `array` | Yes | List of `{ id: string }` — order item CUIDs to reprint (min 1) |
-| `reprintReceipt` | `boolean` | Yes | Whether to also reprint the fiscal receipt |
+| Field            | Type      | Required | Description                                                    |
+| ---------------- | --------- | -------- | -------------------------------------------------------------- |
+| `orderItems`     | `array`   | Yes      | List of `{ id: string }` — order item CUIDs to reprint (min 1) |
+| `reprintReceipt` | `boolean` | Yes      | Whether to also reprint the fiscal receipt                     |
 
 ### Response `200 OK`
 
 Returns the order with:
+
 - `reprintOrderItems` — filtered items selected for reprint
 - `reprintReceipt` — whether the receipt should be reprinted
 - `orderItems` — complete unfiltered list of all order items
 
 ### Errors
 
-| Status | Description |
-|--------|-------------|
-| `400` | Invalid request body or item IDs not found in this order |
-| `401` | Unauthorized — authentication required |
-| `403` | Forbidden — insufficient permissions |
-| `404` | Order not found |
+| Status | Description                                              |
+| ------ | -------------------------------------------------------- |
+| `400`  | Invalid request body or item IDs not found in this order |
+| `401`  | Unauthorized — authentication required                   |
+| `403`  | Forbidden — insufficient permissions                     |
+| `404`  | Order not found                                          |
 
 ---
 
@@ -364,9 +362,9 @@ Update order status.
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | `integer` | Numeric order ID |
+| Parameter | Type      | Description      |
+| --------- | --------- | ---------------- |
+| `id`      | `integer` | Numeric order ID |
 
 ### Request Body
 
@@ -376,9 +374,9 @@ Update order status.
 }
 ```
 
-| Field | Type | Required | Values |
-|-------|------|----------|--------|
-| `status` | `string` | Yes | `PENDING`, `CONFIRMED`, `COMPLETED`, `PICKED_UP` |
+| Field    | Type     | Required | Values                                           |
+| -------- | -------- | -------- | ------------------------------------------------ |
+| `status` | `string` | Yes      | `PENDING`, `CONFIRMED`, `COMPLETED`, `PICKED_UP` |
 
 ### Response `200 OK`
 
@@ -386,12 +384,12 @@ Returns the updated order.
 
 ### Errors
 
-| Status | Description |
-|--------|-------------|
-| `400` | Invalid status value |
-| `401` | Unauthorized — authentication required |
-| `403` | Forbidden — insufficient permissions |
-| `404` | Order not found |
+| Status | Description                            |
+| ------ | -------------------------------------- |
+| `400`  | Invalid status value                   |
+| `401`  | Unauthorized — authentication required |
+| `403`  | Forbidden — insufficient permissions   |
+| `404`  | Order not found                        |
 
 ---
 
@@ -403,17 +401,17 @@ Permanently delete an order and all its items.
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | `integer` | Numeric order ID |
+| Parameter | Type      | Description      |
+| --------- | --------- | ---------------- |
+| `id`      | `integer` | Numeric order ID |
 
 ### Response `204 No Content`
 
 ### Errors
 
-| Status | Description |
-|--------|-------------|
-| `400` | Invalid order ID |
-| `401` | Unauthorized — authentication required |
-| `403` | Forbidden — insufficient permissions |
-| `404` | Order not found |
+| Status | Description                            |
+| ------ | -------------------------------------- |
+| `400`  | Invalid order ID                       |
+| `401`  | Unauthorized — authentication required |
+| `403`  | Forbidden — insufficient permissions   |
+| `404`  | Order not found                        |

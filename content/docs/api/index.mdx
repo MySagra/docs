@@ -20,13 +20,13 @@ https://your-domain.com
 
 ## Authentication
 
-Most endpoints require a **Bearer token** (JWT) sent in the `Authorization` header:
+Most endpoints require a **mysagra_token** (JWT) sent in the `Cookie` header:
 
 ```
-Authorization: Bearer <accessToken>
+Cookie: mysagra_token=YOUR_AUTH_TOKEN
 ```
 
-Obtain tokens via the [Authentication](/api/authentication) endpoints. Access tokens expire after **15 minutes**; use the refresh endpoint to obtain new ones.
+Obtain tokens via the [Authentication](/api/authentication) endpoints. The cookie expire after **6 hours**.
 
 Some service endpoints accept **API keys** via the `X-API-KEY` header. See [Authentication](/api/authentication) and [API Keys](/api/api-keys) for details.
 
