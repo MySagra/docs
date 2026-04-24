@@ -343,15 +343,15 @@ const SERVICES: ServiceDef[] = [
       - "3000:3000"
     env_file: .env
     environment:
-      - DBGATE_USER=\${DBGATE_USER}
-      - DBGATE_PASSWORD=\${DBGATE_PASSWORD}
+      - LOGIN=\${DBGATE_USER}
+      - PASSWORD=\${DBGATE_PASSWORD}
       - CONNECTIONS=con1
-      - con1_driver=mysql
-      - con1_server=db
-      - con1_port=3306
-      - con1_user=\${DB_USER:-mysagra}
-      - con1_password=\${DB_USER_PASSWORD}
-      - con1_database=\${MYSQL_DATABASE:-mysagra}
+      - ENGINE_con1=mysql@dbgate-plugin-mysql
+      - SERVER_con1=db
+      - PORT_con1=3306
+      - USER_con1=\${DB_USER:-mysagra}
+      - PASSWORD_con1=\${DB_USER_PASSWORD}
+      - DATABASE_con1=\${MYSQL_DATABASE:-mysagra}
     networks:
       - mysagra-network`,
         networks: ['mysagra-network'],
@@ -767,7 +767,7 @@ export default function DockerComposeGenerator() {
                 if (s.id === 'nginx') return buildNginxCompose(selected)
                 if (!hasNginx && ['mycassa', 'myamministratore', 'mystampa', 'mynumeri', 'myclienti'].includes(s.id)) {
                     const portMap: Record<string, [string, string]> = {
-                        mycassa: ['3031', '3031'],
+                        mycassa: ['80', '3031'],
                         myamministratore: ['81', '3000'],
                         mystampa: ['3032', '3032'],
                         mynumeri: ['3033', '3033'],
